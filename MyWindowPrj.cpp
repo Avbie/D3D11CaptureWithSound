@@ -13,7 +13,7 @@
 
 
 
-#define STB_IMAGE_IMPLEMENTATION
+//#define STB_IMAGE_IMPLEMENTATION
 
 using namespace Microsoft::WRL;
 using Microsoft::WRL::ComPtr;
