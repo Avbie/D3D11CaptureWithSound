@@ -1,0 +1,198 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Quelldateien">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Headerdateien">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Ressourcendateien">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Dxerr">
+      <UniqueIdentifier>{f4ba330f-07c0-4390-88df-4dfcc6fd36f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Macros">
+      <UniqueIdentifier>{38d36835-4572-457d-9b41-b38efea422c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\D3D11">
+      <UniqueIdentifier>{f7787943-f1c0-4f08-b752-be60f35a7860}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\D3D11">
+      <UniqueIdentifier>{e4b6aa68-dacc-437b-98db-5d70df6e3184}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\BitBlt">
+      <UniqueIdentifier>{f89025c4-96bb-4b92-8310-68b072ddd8b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\BitBlt">
+      <UniqueIdentifier>{4252990d-2419-4468-8bdf-6667592345f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\SinkWriter">
+      <UniqueIdentifier>{e5b0fc4d-794e-4859-8412-a1cfddd745f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\SinkWriter">
+      <UniqueIdentifier>{23d48fd4-97f9-4ab3-9721-57c1ca1316d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\CoreAudio">
+      <UniqueIdentifier>{6c45bcf7-cf10-4ee6-8ecd-6f9a4a6c2dd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\CoreAudio">
+      <UniqueIdentifier>{bb9cce11-00b2-4304-9984-5eb1dce4be70}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\D2D1">
+      <UniqueIdentifier>{a7f2d0bd-23e7-4dc1-87e2-a869b56d0d90}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\D2D1">
+      <UniqueIdentifier>{2b54bceb-d68e-43f7-aa32-936d310e501d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\ClsScreenShot">
+      <UniqueIdentifier>{d16e19f2-5976-4481-b159-7247118b0871}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\FPSSync">
+      <UniqueIdentifier>{8e5cd0c5-a383-4ce6-8526-4b5952e87fd2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\ClsScreenshot">
+      <UniqueIdentifier>{fea2c932-282c-4bea-a796-a36de5e68550}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="framework.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="MyWindowPrj.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsWnd.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsWndProc.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsMenu.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsTimer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="dxerr.h">
+      <Filter>Headerdateien\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="D3DBuffer.h">
+      <Filter>Headerdateien\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsWndCallback.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsWndHandle.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsD3D11.h">
+      <Filter>Headerdateien\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsSinkWriter.h">
+      <Filter>Headerdateien\SinkWriter</Filter>
+    </ClInclude>
+    <ClInclude Include="SinkWriter.h">
+      <Filter>Headerdateien\SinkWriter</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsSilence.h">
+      <Filter>Headerdateien\CoreAudio</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsCoreAudio.h">
+      <Filter>Headerdateien\CoreAudio</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsD2D1.h">
+      <Filter>Headerdateien\D2D1</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsScreenshot.h">
+      <Filter>Headerdateien\ClsScreenShot</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsFpsSync.h">
+      <Filter>Headerdateien\FPSSync</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsWinGDI.h">
+      <Filter>Headerdateien\BitBlt</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsD3D11Recording.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="MyWindowPrj.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsWndProc.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsWnd.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsTimer.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsD3D11.cpp">
+      <Filter>Quelldateien\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsSinkWriter.cpp">
+      <Filter>Quelldateien\SinkWriter</Filter>
+    </ClCompile>
+    <ClCompile Include="dxerr.cpp">
+      <Filter>Quelldateien\D3D11</Filter>
+    </ClCompile>
+    <ClCompile Include="SinkWriter.cpp">
+      <Filter>Quelldateien\SinkWriter</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsSilence.cpp">
+      <Filter>Quelldateien\CoreAudio</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsCoreAudio.cpp">
+      <Filter>Quelldateien\CoreAudio</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsD2D1.cpp">
+      <Filter>Quelldateien\D2D1</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsScreenshot.cpp">
+      <Filter>Quelldateien\ClsScreenshot</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsWinGDI.cpp">
+      <Filter>Quelldateien\BitBlt</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="MyWindowPrj.rc">
+      <Filter>Ressourcendateien</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="small.ico">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+    <Image Include="MyWindowPrj.ico">
+      <Filter>Ressourcendateien</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+    <None Include="DXGetErrorDescription.inl">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="VertexShader.hlsl" />
+    <FxCompile Include="PixelShader.hlsl" />
+    <FxCompile Include="VertexShader1.hlsl" />
+  </ItemGroup>
+</Project>
