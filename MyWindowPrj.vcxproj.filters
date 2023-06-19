@@ -152,9 +152,6 @@
     <ClCompile Include="dxerr.cpp">
       <Filter>Quelldateien\D3D11</Filter>
     </ClCompile>
-    <ClCompile Include="SinkWriter.cpp">
-      <Filter>Quelldateien\SinkWriter</Filter>
-    </ClCompile>
     <ClCompile Include="ClsSilence.cpp">
       <Filter>Quelldateien\CoreAudio</Filter>
     </ClCompile>

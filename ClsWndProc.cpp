@@ -47,6 +47,7 @@ ClsWndProc::ClsWndProc()
 /// <returns>Verarbeitete Msgs</returns>
 LRESULT ClsWndProc::MsgProcSetup(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM lParam)
 {
+	// triggered by CreateWindowEx inClsWnd::ClsWnd
 	if (uiMsg == WM_NCCREATE)
 	{
 		CREATESTRUCT* pCreateStruct = (CREATESTRUCT*)lParam;

@@ -7,9 +7,7 @@
 #include "ClsWndProc.h"
 #include "ClsD3D11Recording.h"
 #include "ClsMenu.h"
-//todo setres/getres brauchen wir nicht mehr, wird über d3d ermittelt, alles raus
-//uiWidth = 1680; 2560; 1920; oMyWnd.GetResolution().GetWidth();
-	//uiHeight = 1050;//1440;// 1080;// oMyWnd.GetResolution().GetHeight();
+
 struct MouseState {
 	BOOL lKeyDown, mKeyDown, rKeyDown;
 	UINT posX, posY;
@@ -28,8 +26,6 @@ public:
 	HWND GetHWND() { return m_hWnd; }
 private:
 	void CreateMyMenu();
-	//void SetWndProp();
-	//WndProperty& GetWndProp();
 public:
 	static INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 

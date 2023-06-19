@@ -18,7 +18,7 @@ namespace D3D
 		HWND m_hWnd;										// Target Window for displaying Data
 		UINT m_uiPickedMonitor;								// Monitor that will be used as DataSource
 		float m_fClearColor[4] = { 0.3f, 1.0f, 0.3f, 1.0f };// ClearColor
-		RECT m_myClientRect = {};							// Client Window Place (Without Border, Menu etc.)
+		RECT m_myClientRect;								// Client Window Place (Without Border, Menu etc.)
 		CopyMethod m_myCpyMethod;							// CopyMethod of PixelData
 		FrameData* m_pFrameData;							// Frame Format Information
 		
@@ -54,15 +54,15 @@ namespace D3D
 		ComPtr<ID3D11Texture2D> m_pD3D11TextureCPUAccess;	// Texture with CPU Access, same Data as m_pD3dAcquiredDesktopImage
 		D3D11_TEXTURE2D_DESC m_myTextureDescCPUAccess;		// TextureDescription
 		DXGI_OUTDUPL_FRAME_INFO m_MyFrameInfo;				// additional Information of the Output
-		D3D11_MAPPED_SUBRESOURCE m_mySubResD3D11Texture; // SubRessource of the m_pD3D11TextureCPUAccess
+		D3D11_MAPPED_SUBRESOURCE m_mySubResD3D11Texture;	// SubRessource of the m_pD3D11TextureCPUAccess
 		
-		// D2D1 Interfaces
+		// D2D1 Interface
 		ClsD2D1* m_pClsD2D1;
 		
 		// Constant Buffer Transformation, 
 		// will be updated every Frame per MatrixFunction without slow CPU operations
-		ConstantBufferContent m_ConstantBuffer;				
-		ClsTimer m_oTimer;		// Timer Obj um Zeit
+		ConstantBufferContent m_myConstantBuffer;				
+		ClsTimer m_oTimer;									// Timer Obj for ConstantBuffer, Value for Matrixcalculation for every frame (Constantbuffer are not used yet)
 	public:
 		ClsD3D11();
 		~ClsD3D11();

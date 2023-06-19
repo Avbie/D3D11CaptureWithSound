@@ -1,17 +1,5 @@
 #include "ClsSinkWriter.h"
-//#include <mfidl.h>
-//#include <evr.h>
-/*
-ComPtr <IMFSinkWriter> ClsSinkWriter::m_pSinkWriter;
-// Video
-DWORD ClsSinkWriter::m_dwStreamIndexVidOut = 0;
-LONGLONG ClsSinkWriter::m_lDurationVid = 0;
-LONGLONG ClsSinkWriter::m_lSampleTimeVid = 0;
-// Audio
-DWORD ClsSinkWriter::m_dwStreamIndexAudOut = 0;
-LONGLONG ClsSinkWriter::m_lDurationAud = 0;
-LONGLONG ClsSinkWriter::m_lSampleTimeAud = 0;
-*/
+
 void ClsSinkWriter::SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*,UINT*))
 {
     m_pReadAudioBuffer = pReadAudioBuffer;
@@ -22,21 +10,35 @@ void ClsSinkWriter::SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE
 /// </summary>
 ClsSinkWriter::ClsSinkWriter()
 {
-    m_dwStreamIndexVidOut = 0;
-    m_lDurationVid = 0;
-    m_lSampleTimeVid = 0;
-    // Audio
-    m_dwStreamIndexAudOut = 0;
-    m_lDurationAud = 0;
-    m_lSampleTimeAud = 0;
-    m_hThreadReadAudioHWBuffer = NULL;
-
     m_bFinished = false;
-    m_bIsAudio = false;
-    m_uiFPS = 0;
+    m_pSinkWriter.ReleaseAndGetAddressOf();
+    m_pFrameData = NULL;
+    // Video
+    m_dwDataRow = 0;                                    // Width*Bpp
+    m_dwStreamIndexVidOut = 0;                          // VideoSpur
+    m_uiFPS = 0;                                        // FPS Limit
+    m_uiBitRate = 0;                                    // Height*Width*Bpp
+    m_lDurationVid = 0;                                 // In 100NanoSecondsUnits how long one Frame will be displayed. Depending on FrameRate
+    m_lSampleTimeVid = 0;                               // Sum of m_lDurationVid, identify the Position of each Frame
+
+    m_myBitReading = PicDataBitReading::Standard;       // Type of PixelData Interpretation (Bmp: Last to First Line)
+    m_myInputFormat = MFVideoFormat_RGB32;              // InputFormat
+    m_myOutputFormat = MFVideoFormat_H264;              // OutputFormat
+    m_pBuffer.ReleaseAndGetAddressOf();                 // IMF-Buffer für das Sample, nimmt pData von FrameData auf
+    m_pSample.ReleaseAndGetAddressOf();                 // IMF-Sample, builded with m_pBuffer Data
+
+    // Audio
+    m_bIsAudio = false;                                     
+    m_hThreadReadAudioHWBuffer = NULL;
+    m_dwStreamIndexAudOut = 0;                          // AudioSpur ( e.g. German, English etc.)
+    m_uiAudioBytes= 0;
+    m_lDurationAud = 0;                                 // In 100NanoSecondsUnits how long a AudioFrames needs for Playback
+    m_lSampleTimeAud = 0;                               // Sum of m_lDurationVid, identify the Position of each Frame
     m_pWaveFormat = NULL;
-    m_pSample.ReleaseAndGetAddressOf();
-    m_pBuffer.ReleaseAndGetAddressOf();
+    //FunctionPointer for ClsCoreAudio::ReadBuffer(...)
+    m_pAudioData = NULL;
+    m_pReadAudioBuffer;    
+    
     // init. all in the same Thread: "Single threaded Apartment"
     HR(CoInitialize(NULL));                            
     // init. Microsoft Media foundation
@@ -95,8 +97,8 @@ void ClsSinkWriter::SetBitRate(UINT32 uiBitRate)
 /// <param name="MyOutputFormat">SinkWriter OutputFormat</param>
 void ClsSinkWriter::SetFormats(GUID MyInputFormat, GUID MyOutputFormat)
 {
-    m_MyInputFormat = MyInputFormat;
-    m_MyOutputFormat = MyOutputFormat;
+    m_myInputFormat = MyInputFormat;
+    m_myOutputFormat = MyOutputFormat;
 }
 /// <summary>
 /// Set the Name of the VideoFile for the Sinkwriter (char* to WideChar[256])
@@ -173,7 +175,7 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     HR_RETURN_ON_ERR(hr, MFCreateMediaType(&pMediaTypeVideoOut)); // erstellt ein Obj was ein MedienTyp repräsentiert, Zugriff per IF-Pointer
     // Schlüssel-Wert-Paare
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-    HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetGUID(MF_MT_SUBTYPE, m_MyOutputFormat));
+    HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetGUID(MF_MT_SUBTYPE, m_myOutputFormat));
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetUINT32(MF_MT_AVG_BITRATE, m_uiBitRate));
     // interlaceMode: progressive jede zeile wird gezeichnet
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
@@ -204,7 +206,7 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     // INPUT Video
     HR_RETURN_ON_ERR(hr, MFCreateMediaType(&pMediaTypeVideoIn));
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video));
-    HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetGUID(MF_MT_SUBTYPE, m_MyInputFormat));
+    HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetGUID(MF_MT_SUBTYPE, m_myInputFormat));
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
     HR_RETURN_ON_ERR(hr, MFSetAttributeSize(pMediaTypeVideoIn.Get(), MF_MT_FRAME_SIZE, uiWidthDest, uiHeightDest));
     HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_FRAME_RATE, m_uiFPS, 1));

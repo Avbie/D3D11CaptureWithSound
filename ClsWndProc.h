@@ -1,8 +1,13 @@
 #pragma once
 #include <Windows.h>
-
 #include "ClsWnd.h"
 
+/// <summary>
+/// Singleton Class
+/// will be executed when app is running
+/// Register a Windowclass with the specific longPointerFunction lpfnWndProc
+/// registered class/Window will be used by CreateWindowEx in ClsWnd::ClsWnd
+/// </summary>
 class ClsWndProc
 {
 public:
@@ -12,7 +17,6 @@ public:
 private:
 	ClsWndProc();
 	~ClsWndProc();
-	//return ClsWnd
 private:
 	HINSTANCE m_hInstance;
 	static ClsWndProc SingletonInstance;

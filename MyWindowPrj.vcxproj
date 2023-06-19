@@ -183,7 +183,6 @@
     <ClCompile Include="ClsWndProc.cpp" />
     <ClCompile Include="dxerr.cpp" />
     <ClCompile Include="MyWindowPrj.cpp" />
-    <ClCompile Include="SinkWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MyWindowPrj.rc" />

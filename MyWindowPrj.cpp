@@ -1,27 +1,10 @@
 // MyWindowPrj.cpp : Definiert den Einstiegspunkt für die Anwendung.
 #include "framework.h"
-//#include "ClsD3D11.h"
-//#include "ClsWinGDI.h"
 #include "MyWindowPrj.h"
 #include "ClsWndProc.h"
 #include "ClsWnd.h"
-//#include "ClsSinkWriter.h"
-
-//#include "ClsFpsSync.h"
-
-#include <strsafe.h>
-
-
-
-//#define STB_IMAGE_IMPLEMENTATION
-
-using namespace Microsoft::WRL;
-using Microsoft::WRL::ComPtr;
-using namespace std::chrono;
-
 
 const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-//const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
 const IID IID_IAudioClient = __uuidof(IAudioClient);
 const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 const IID IID_IAudioSessionManager2 = __uuidof(IAudioSessionManager2);

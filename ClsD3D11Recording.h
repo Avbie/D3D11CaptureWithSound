@@ -228,8 +228,8 @@ public:
 
 		SinkWriter.StartReadAudioHWBufferThread();
 		D3D11.BitBltDataToRT();
+		//D3D11.SetConstantBuffer();
 		//MyClsDataContainer.WinGDI.TakeScreenshot();
-		//HR(oD3D11.SetConstantBuffer());
 		SinkWriter.LoopRecording();
 		D3D11.PresentTexture();
 		SyncFPS.SleepUntilNextFrame();

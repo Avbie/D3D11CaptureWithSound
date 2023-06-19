@@ -54,10 +54,12 @@ namespace D3D
 		IndexBufferContent()
 		{
 			pIndexBuffer.ReleaseAndGetAddressOf();
+			myIndexBufferDesc = {};
+			myIndexSubResData = {};
 		}
 		ComPtr<ID3D11Buffer> pIndexBuffer;
-		D3D11_BUFFER_DESC IndexBufferDesc = {};
-		D3D11_SUBRESOURCE_DATA IndexSubResData = {};
+		D3D11_BUFFER_DESC myIndexBufferDesc;
+		D3D11_SUBRESOURCE_DATA myIndexSubResData;
 
 		// 2 Dreiecke jeweils im Uhrzeigersinn = Viereck
 		// Immer nur eine Richtung, sonst Fehler
@@ -66,6 +68,15 @@ namespace D3D
 			0,1,2,
 			0,2,3
 		};
+		// overloaded operator. Used as init.: Object = {};
+		IndexBufferContent operator = (const D3D::IndexBufferContent& other)
+		{
+			pIndexBuffer = other.pIndexBuffer;
+			myIndexBufferDesc = other.myIndexBufferDesc;
+			myIndexSubResData = other.myIndexSubResData;
+
+			return *this;
+		}
 	};
 	/// <summary>
 	/// Struktur für eine TransformationsMatrix
@@ -87,16 +98,23 @@ namespace D3D
 	/// </summary>
 	struct ConstantBufferContent
 	{
-		float fAngle = 0.0f;
-		ConstantBuffer MyConstantBuffer =
+	public:
+		ConstantBufferContent()
 		{
+			fAngle = 0.0f;
+			myConstantBuffer =
 			{
-				std::cos(fAngle), std::sin(fAngle), 0.0f, 0.0f,
-				-std::sin(fAngle), std::cos(fAngle), 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			}
-		};
+				{
+					std::cos(fAngle), std::sin(fAngle), 0.0f, 0.0f,
+					-std::sin(fAngle), std::cos(fAngle), 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				}
+			};
+			pConstantBuffer.ReleaseAndGetAddressOf();
+		}
+		float fAngle;
+		ConstantBuffer myConstantBuffer;
 		ComPtr<ID3D11Buffer> pConstantBuffer;
 	};
 

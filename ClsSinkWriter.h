@@ -25,45 +25,40 @@ struct DataForAudioThread
 class ClsSinkWriter
 {
 private:
-    // Video
-    DWORD m_dwStreamIndexVidOut;                     // VideoSpur
-    LONGLONG m_lDurationVid;                         // In 100NanoSecondsUnits how long one Frame will be displayed. Depending on FrameRate
-    LONGLONG m_lSampleTimeVid;                       // Sum of m_lDurationVid, identify the Position of each Frame
-    // Audio
-    DWORD m_dwStreamIndexAudOut;                     // AudioSpur ( e.g. German, English etc.)
-    LONGLONG m_lDurationAud;                         // In 100NanoSecondsUnits how long a AudioFrames needs for Playback
-    LONGLONG m_lSampleTimeAud;                       // Sum of m_lDurationVid, identify the Position of each Frame
-
-    ComPtr <IMFSinkWriter> m_pSinkWriter;
-    
-    FrameData* m_pFrameData;
+    // generall
     BOOL m_bFinished;
-    
-  
+    ComPtr <IMFSinkWriter> m_pSinkWriter;
+    FrameData* m_pFrameData;
     // Video
-    UINT32 m_uiFPS;                                         // FPS Limit
-    UINT32 m_uiBitRate;                                     // Height*Width*Bpp
-    DWORD m_dwDataRow;                                      // Width*Bpp
-    PicDataBitReading m_myBitReading = PicDataBitReading::Standard; //Type of PixelData Interpretation (Bmp: Last to First Line)
-    WCHAR m_wstrFilename[MAXSIZE] = L"";                    // VideoFileName as wChar
-    GUID m_MyOutputFormat = MFVideoFormat_H264;             // OutputFormat
-    GUID m_MyInputFormat = MFVideoFormat_RGB32;             // InputFormat
-    ComPtr <IMFMediaBuffer> m_pBuffer;                      // IMF-Buffer für das Sample, nimmt pData von FrameData auf
-    ComPtr <IMFSample> m_pSample;                           // IMF-Sample, builded with m_pBuffer Data
-
+    DWORD m_dwDataRow;                              // Width*Bpp
+    DWORD m_dwStreamIndexVidOut;                    // VideoSpur
+    UINT32 m_uiBitRate;                             // Height*Width*Bpp
+    UINT32 m_uiFPS;                                 // FPS Limit
+    LONGLONG m_lDurationVid;                        // In 100NanoSecondsUnits how long one Frame will be displayed. Depending on FrameRate
+    LONGLONG m_lSampleTimeVid;                      // Sum of m_lDurationVid, identify the Position of each Frame
+    WCHAR m_wstrFilename[MAXSIZE] = L"";            // VideoFileName as wChar
+    
+    PicDataBitReading m_myBitReading;               //Type of PixelData Interpretation (Bmp: Last to First Line)
+    GUID m_myInputFormat;                           // InputFormat
+    GUID m_myOutputFormat;                          // OutputFormat
+    ComPtr <IMFMediaBuffer> m_pBuffer;              // IMF-Buffer für das Sample, nimmt pData von FrameData auf
+    ComPtr <IMFSample> m_pSample;                   // IMF-Sample, builded with m_pBuffer Data
+    
     // Audio
     BOOL m_bIsAudio;
+    HANDLE m_hThreadReadAudioHWBuffer;
+    DWORD m_dwStreamIndexAudOut;                    // AudioSpur ( e.g. German, English etc.)
+    UINT32 m_uiAudioBytes;
+    LONGLONG m_lDurationAud;                        // In 100NanoSecondsUnits how long a AudioFrames needs for Playback
+    LONGLONG m_lSampleTimeAud;                      // Sum of m_lDurationVid, identify the Position of each Frame
+
     ClsCoreAudio CoreAudio;
     WAVEFORMATEX* m_pWaveFormat;
+    BYTE* m_pAudioData;
     //FunctionPointer for ClsCoreAudio::ReadBuffer(...)
     HRESULT(*m_pReadAudioBuffer)(BYTE**, UINT*, UINT* uiFPS);
-    HANDLE m_hThreadReadAudioHWBuffer;
-    BYTE* m_pAudioData;
-    UINT32 m_uiAudioBytes;
-
-   
-public:
     DataForAudioThread m_myDataForAudioThread;
+
 public:
     ClsSinkWriter();
     ~ClsSinkWriter();

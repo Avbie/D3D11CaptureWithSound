@@ -11,24 +11,37 @@ namespace D3D
 	/// <param name="pClsDataContainer">Container der alle notwendigen Daten für Fenster enthält</param>
 	ClsD3D11::ClsD3D11()
 	{
-		m_uiPickedMonitor = MAINMONITOR;
 		m_hWnd = NULL;
-		m_pClsD2D1 = NULL;
-		m_pFrameData = NULL;
+		m_uiPickedMonitor = MAINMONITOR;
+		m_myClientRect = {};
 		m_myCpyMethod = DEFCPYMETHOD;
+		m_pFrameData = NULL;
+
+		// Device, Factory, SwapChain
 		m_pD3dDevice.ReleaseAndGetAddressOf();
 		m_pD3dContext.ReleaseAndGetAddressOf();
 		m_pDxgiDevice2.ReleaseAndGetAddressOf();
 		m_pdxgiAdapter.ReleaseAndGetAddressOf();
 		m_pdxgiFactory2.ReleaseAndGetAddressOf();
+
+		// SwapChain
 		m_pDxgiSwapChain.ReleaseAndGetAddressOf();
-		
-		m_pBackBuffer.ReleaseAndGetAddressOf();
 		m_pTarRenderView.ReleaseAndGetAddressOf();
+		m_pBackBuffer.ReleaseAndGetAddressOf();
+
+		// Displaying Texture
 		m_pD3D11Texture.ReleaseAndGetAddressOf();
 		m_pShaderView.ReleaseAndGetAddressOf();
+		
+		// Shader Programs
 		m_pVertexShaderBlob.ReleaseAndGetAddressOf();
 		m_pPixelShaderBlob.ReleaseAndGetAddressOf();
+
+		// Includes the Buffer, Description and Indices 
+		// for the 2 Displaying triangles. Its the RECT for the Window
+		m_myIndexBuffer = {};
+
+		// DesktopDupl
 		m_pDeskDupl.ReleaseAndGetAddressOf();
 		m_pDxgiDesktopResource.ReleaseAndGetAddressOf();
 		m_pD3dAcquiredDesktopImage.ReleaseAndGetAddressOf();
@@ -36,6 +49,11 @@ namespace D3D
 		m_myTextureDescCPUAccess = {};
 		m_MyFrameInfo = {};
 		m_mySubResD3D11Texture = {};
+		
+		// D2D1 Interface
+		m_pClsD2D1 = NULL;
+
+		m_myConstantBuffer = {};
 	}
 	/***********Set-Get-Methodes******/
 	void ClsD3D11::SetFrameData(FrameData** ppFrameData)
@@ -88,7 +106,7 @@ namespace D3D
 	/// </summary>
 	HRESULT ClsD3D11::CreateDevice()
 	{
-		HRESULT hr = NULL;									// Rückgabewert von ApiFkt. für Errorhandling
+		HRESULT hr = NULL;										// Rückgabewert von ApiFkt. für Errorhandling
 		ComPtr<IDXGIDevice2> dxgiDevice;						// Smartpointer zum COM-DXGIDevice-Interface-Obj
 		D3D_FEATURE_LEVEL pSelectedFeatureLvl;					// will recieve the FeatureLvl set by GPU
 		D3D_FEATURE_LEVEL aFeatureLevels[] =					// FeatureLvlArray, bricht ab nachdem er eins erfolgreich bestätigt hat
@@ -172,7 +190,7 @@ namespace D3D
 	/// Referenz zum leeren ComPtr für Swapchain</summary>
 	HRESULT ClsD3D11::CreateSwapChain()
 	{
-		HRESULT hr = NULL;										// Rückgabewert von ApiFkt. für Errorhandling
+		HRESULT hr = NULL;											// Rückgabewert von ApiFkt. für Errorhandling
 		//ComPtr<IDXGIDevice2> dxgiDevice;							// Smartpointer bzw Adresse zum COM-Factory-Interface-Obj
 
 		DXGI_SWAP_CHAIN_DESC1 d3d11SwapChainDesc = {};				// typed Struct für die SwapchainDescription
@@ -210,8 +228,8 @@ namespace D3D
 	}//END-FUNC CreateSwapChain
 
 	/// <summary>
-	/// Allocated Buffer der für die Swapchain verwendet werden kann
-	/// Bindet Buffer an View, welche an die D3D11 Pipeline gebunden ist
+	/// Alloctae Buffer that will be used for the Swapchain
+	/// Binds Buffer on RTView, View is binded on the Pipeline
 	/// </summary>
 	HRESULT ClsD3D11::CreateSwapChainBuffer()
 	{
@@ -225,7 +243,7 @@ namespace D3D
 			0,												// Description für View, NULL wenn 1. Param kein Mipmap hat
 			&m_pTarRenderView));							// RenderTargetView ist an m_pBackBuffer gebunden
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Erstellt einen VertexBuffer-Speicher. Mit CreateBuffer wird Speicher auf GPU allocated und mit SetVertexBuffers wird es auf GPU kopiert
 	/// Referenz zu meinem VertexStruct, dass folgende Daten beinhaltet:
@@ -238,7 +256,7 @@ namespace D3D
 	HRESULT ClsD3D11::CreateVertexBuffer()
 	{
 		VertexBufferContent VBufContent;						// Punkte
-		HRESULT hr = NULL;									// Rückgabewert von ApiFkt. für Errorhandling
+		HRESULT hr = NULL;										// Rückgabewert von ApiFkt. für Errorhandling
 		VBufContent.VertexBufferDesc.BindFlags
 			= D3D11_BIND_VERTEX_BUFFER;							// Buffer soll für Vertexe verwendet werden, Vertex Buffer in IA-Stage
 		VBufContent.VertexBufferDesc.Usage
@@ -277,25 +295,25 @@ namespace D3D
 	HRESULT ClsD3D11::CreateIndexBuffer()
 	{
 		HRESULT hr = NULL;									// Rückgabewert von ApiFkt. für Errorhandling
-		m_myIndexBuffer.IndexBufferDesc.BindFlags					// Buffer soll als IndexBuffer genutzt werde-> IndexBufferFlag setzen
-			= D3D11_BIND_INDEX_BUFFER;							// Buffer soll für VertexIndices verwendet werden, IndexBuffer in IA-Stage
-		m_myIndexBuffer.IndexBufferDesc.Usage
-			= D3D11_USAGE_DEFAULT;								// Default: GPU read and write
-		m_myIndexBuffer.IndexBufferDesc.ByteWidth
-			= sizeof(m_myIndexBuffer.iIndices);						// Gesamte Größe von iIndices oder: sizeof(iIndices*6)= sizeof(short)*6 = 16*6
-		m_myIndexBuffer.IndexBufferDesc.CPUAccessFlags = 0;
-		m_myIndexBuffer.IndexBufferDesc.MiscFlags = 0;
-		m_myIndexBuffer.IndexSubResData.pSysMem
-			= m_myIndexBuffer.iIndices;								// Zuweisung der Daten in SubResourceTyp
+		m_myIndexBuffer.myIndexBufferDesc.BindFlags			// Buffer soll als IndexBuffer genutzt werde-> IndexBufferFlag setzen
+			= D3D11_BIND_INDEX_BUFFER;						// Buffer soll für VertexIndices verwendet werden, IndexBuffer in IA-Stage
+		m_myIndexBuffer.myIndexBufferDesc.Usage
+			= D3D11_USAGE_DEFAULT;							// Default: GPU read and write
+		m_myIndexBuffer.myIndexBufferDesc.ByteWidth
+			= sizeof(m_myIndexBuffer.iIndices);				// Gesamte Größe von iIndices oder: sizeof(iIndices*6)= sizeof(short)*6 = 16*6
+		m_myIndexBuffer.myIndexBufferDesc.CPUAccessFlags = 0;
+		m_myIndexBuffer.myIndexBufferDesc.MiscFlags = 0;
+		m_myIndexBuffer.myIndexSubResData.pSysMem
+			= m_myIndexBuffer.iIndices;						// Zuweisung der Daten in SubResourceTyp
 		// Reservierung des Speichers auf GPU
-		HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateBuffer(						// Erstellung des IndexBuffer auf GPU
-			&m_myIndexBuffer.IndexBufferDesc,						// Bufferbeschreibung (als IndexBuffer)
-			&m_myIndexBuffer.IndexSubResData,						// Datencontainer	
-			&m_myIndexBuffer.pIndexBuffer));							// IF-Pointer zum IndexBufferObj
+		HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateBuffer(	// Erstellung des IndexBuffer auf GPU
+			&m_myIndexBuffer.myIndexBufferDesc,				// Bufferbeschreibung (als IndexBuffer)
+			&m_myIndexBuffer.myIndexSubResData,				// Datencontainer	
+			&m_myIndexBuffer.pIndexBuffer));				// IF-Pointer zum IndexBufferObj
 
-		m_pD3dContext->IASetIndexBuffer(							// COPY GPU zu GPU
-			m_myIndexBuffer.pIndexBuffer.Get(),						// setzt alle notwendigen Daten, die dann beim StageDurchgang abgefragt werden
-			DXGI_FORMAT_R16_UINT, 0);							// Format der Elemente (short integer)
+		m_pD3dContext->IASetIndexBuffer(					// COPY GPU zu GPU
+			m_myIndexBuffer.pIndexBuffer.Get(),				// setzt alle notwendigen Daten, die dann beim StageDurchgang abgefragt werden
+			DXGI_FORMAT_R16_UINT, 0);						// Format der Elemente (short integer)
 
 		return hr;
 	}//END-FUNC
@@ -318,17 +336,17 @@ namespace D3D
 		D3D11_SUBRESOURCE_DATA ConstantSubResData = {};				// Data Container	
 
 		ConstantBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;	// Buffer als ConstantBuffer def.
-		ConstantBufferDesc.ByteWidth = sizeof(m_ConstantBuffer.MyConstantBuffer);	// Array von Matritzen, haben nur ein Element: 4x4xfloat = 4*4*4 = 64 Bytes
+		ConstantBufferDesc.ByteWidth = sizeof(m_myConstantBuffer.myConstantBuffer);	// Array von Matritzen, haben nur ein Element: 4x4xfloat = 4*4*4 = 64 Bytes
 		ConstantBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;	// wird pro Frame geändert, muss für CPU gelockt werden
 		ConstantBufferDesc.MiscFlags = 0;
 		ConstantBufferDesc.StructureByteStride = 0;					// Größe pro Element, wird nicht benötigt
 		ConstantBufferDesc.Usage = D3D11_USAGE_DYNAMIC;				// Dynamic: CPU: write; GPU: read
-		ConstantSubResData.pSysMem = &m_ConstantBuffer.MyConstantBuffer;			// Daten in Datencontainer speichern
+		ConstantSubResData.pSysMem = &m_myConstantBuffer.myConstantBuffer;			// Daten in Datencontainer speichern
 		// Constant Buffer allocaten
 		HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateBuffer(
 			&ConstantBufferDesc,
 			&ConstantSubResData,
-			&m_ConstantBuffer.pConstantBuffer));
+			&m_myConstantBuffer.pConstantBuffer));
 
 		return hr;
 	}//END-FUNC
@@ -361,7 +379,7 @@ namespace D3D
 	HRESULT ClsD3D11::SetConstantBuffer()
 	{
 		HRESULT hr = NULL;
-		m_ConstantBuffer.fAngle = m_oTimer.Peek();				// Winkeländerung pro Frame: Zeitdifferenz zum letzten Durchgang
+		m_myConstantBuffer.fAngle = m_oTimer.Peek();			// Winkeländerung pro Frame: Zeitdifferenz zum letzten Durchgang
 		D3D11_MAPPED_SUBRESOURCE mappedRes;						// Datencontainer
 
 		// 4x4 Matrix
@@ -370,27 +388,27 @@ namespace D3D
 		// 3. z-Koord: keine Änderung, d.h. Einheitswerte
 		// 4. für Mondifikation: keine Änderung, d.h. Einheitswerte
 		// 4x2 Matrix geht nicht für Berechnung -> Zur Berechnung muss Anzahl Zeile = Anzahl Spalte -> 4x4Matrix
-		m_ConstantBuffer.MyConstantBuffer =
+		m_myConstantBuffer.myConstantBuffer =
 		{
 			{
-				std::cos(m_ConstantBuffer.fAngle), std::sin(m_ConstantBuffer.fAngle), 0.0f, 0.0f,
-				-std::sin(m_ConstantBuffer.fAngle), std::cos(m_ConstantBuffer.fAngle), 0.0f, 0.0f,
+				std::cos(m_myConstantBuffer.fAngle), std::sin(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
+				-std::sin(m_myConstantBuffer.fAngle), std::cos(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
 				0.0f, 0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 1.0f
 			}
 		};
 		// Locken des Buffers, sodass CPU drauf schreiben kann (gpu muss mit lesen warten)
 		HR_RETURN_ON_ERR(hr, m_pD3dContext->Map(
-			m_ConstantBuffer.pConstantBuffer.Get(),				// Welcher Buffer soll gelockt werden
+			m_myConstantBuffer.pConstantBuffer.Get(),			// Welcher Buffer soll gelockt werden
 			0,													// Index für Subresource (können mehrere im Array sein)
 			D3D11_MAP_WRITE_DISCARD,							// gelockt fürs schreiben, alter Inhalt wird nicht mehr definiert sein (nicht gemerkt)
 			0,													// Flag setzen falls nicht gelockt werden kann und was CPU derweil tun soll
 			&mappedRes));										// Datencontainer des Buffers
 
 		ConstantBuffer* dataPtr = (ConstantBuffer*)mappedRes.pData; // Zeiger auf Daten im Datencontainer 
-		memcpy(dataPtr, &m_ConstantBuffer.MyConstantBuffer, sizeof(ConstantBuffer)); // neue Daten reinschreiben
-		m_pD3dContext->Unmap(m_ConstantBuffer.pConstantBuffer.Get(), 0); // Buffer wieder unlocken (CPU ist fertig)
-		m_pD3dContext->VSSetConstantBuffers(0, 1, m_ConstantBuffer.pConstantBuffer.GetAddressOf()); // Manipulierten Buffer direkt in VS-Stage setzen
+		memcpy(dataPtr, &m_myConstantBuffer.myConstantBuffer, sizeof(ConstantBuffer)); // neue Daten reinschreiben
+		m_pD3dContext->Unmap(m_myConstantBuffer.pConstantBuffer.Get(), 0); // Buffer wieder unlocken (CPU ist fertig)
+		m_pD3dContext->VSSetConstantBuffers(0, 1, m_myConstantBuffer.pConstantBuffer.GetAddressOf()); // Manipulierten Buffer direkt in VS-Stage setzen
 
 		return hr;
 	}//END-FUNC
@@ -503,7 +521,7 @@ namespace D3D
 				SubResData.SysMemSlicePitch = 0;						// nur wichtig bei 3D-Texturen
 				HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateTexture2D(&TextureDesc, &SubResData, &m_pD3D11Texture));
 				break;
-		}
+		}//END-Switch
 		return hr;
 	}//END-FUNC
 	/// <summary>
@@ -716,7 +734,7 @@ namespace D3D
 				break;
 		}
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Erstellt aus Bilddaten eine Subresource. 
 	/// Input: BitBltData: Width, Height, Bpp, PixelData 
@@ -796,7 +814,7 @@ namespace D3D
 		m_pD3dContext->UpdateSubresource(m_pD3D11Texture.Get(), 0, &destRegion, pData, uiPitch, 0);
 
 		return S_OK;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// - Fragt nächstes Frame von m_pDeskDupl bzw. des Monitorabbildes ab
 	/// - Frame muss released werden bevor nächstes Frame abgerufen werden kann
@@ -830,7 +848,7 @@ namespace D3D
 		HR_RETURN_ON_ERR(hr, m_pDeskDupl->ReleaseFrame());				// Frame wieder freigeben, Abfrage beendet
 		
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// - Kopiert Bilddaten der DesktopDupl in eine Texture - von GPU zu GPU.
 	/// - Ziel ist eine Texture auf GPU, wo CPU Kopierrechte hat.
@@ -863,7 +881,7 @@ namespace D3D
 																											// Lock freigeben. GPU hat wieder vollen Zugriff
 		m_pD3dContext->Unmap(m_pD3D11TextureCPUAccess.Get(), 0);
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Preparing D3D11Texture for copying Data to the CPU-Side.
 	/// Used if CopyMethod::DeskDupl
@@ -887,7 +905,7 @@ namespace D3D
 		HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateTexture2D(&m_myTextureDescCPUAccess, NULL, &m_pD3D11TextureCPUAccess));
 
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Festlegen wie das fertige Bild im Frontbuffer angezeigt werden soll
 	/// Passt Bild für das ZielFenster an: MyViewport
@@ -921,7 +939,7 @@ namespace D3D
 			HR_RETURN_ON_ERR(hr,PrepareDesktopDuplToRAM());
 
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Durchlauf der D3D11-Stages mit .Draw() bzw. .DrawIndexed() und Benutzen der vorh. def. Variablen wie Backbuffer/Texture
 	/// BackBuffer wird zum Frontbuffer und Bild wird somit angezeigt
@@ -946,7 +964,7 @@ namespace D3D
 		));
 
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// Destructor
 	/// </summary>
@@ -957,5 +975,5 @@ namespace D3D
 			delete m_pClsD2D1;
 			m_pClsD2D1 = nullptr;
 		}
-	}
-}
+	}//END-CONS
+}//END-NAMESPACE D3D

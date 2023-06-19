@@ -65,20 +65,20 @@ namespace GDI
 	}//END-FUNC
 
 	/// <summary>
-		/// Fall1:
-		/// Beim Kopieren, wenn Fenster die Quelle ist bzw keine Desktopduplication
-		/// Kopieren der Pixeldaten von hBitmap das sich in hMemDC befindet.
-		/// GetDIBits braucht HDC (hMemDC) und hBitmap um die Pixeldaten zu kopieren.
-		/// Fall2:
-		/// Kopieren der Pixeldaten vom Container der sie von der DesktopDuplication bekommen hat
-		/// Hier erfolgt eine Umkehrung von unten links nach oben rechts ZU oben links nach unten rechts
-		/// (Notwendig weil es beim Bitmap nunmal so ist. GetDIBits macht das ebenfalls)
-		/// CalledBy: ClsWinGDI::TakeScreenshot()
-		/// </summary>
-		/// <param name="hMemDC">Compatibles Memory HDC des Device Contextes vom Fensterhandle</param>
-		/// <param name="hBitmap">HBitmap Bitmap im Memory</param>
-		/// <param name="uiWindowFlag">Flag ob Quelle Desktopduplication oder Fensterhandle ist</param>
-		/// <returns>HRESULT</returns>
+	/// Fall1:
+	/// Beim Kopieren, wenn Fenster die Quelle ist bzw keine Desktopduplication
+	/// Kopieren der Pixeldaten von hBitmap das sich in hMemDC befindet.
+	/// GetDIBits braucht HDC (hMemDC) und hBitmap um die Pixeldaten zu kopieren.
+	/// Fall2:
+	/// Kopieren der Pixeldaten vom Container der sie von der DesktopDuplication bekommen hat
+	/// Hier erfolgt eine Umkehrung von unten links nach oben rechts ZU oben links nach unten rechts
+	/// (Notwendig weil es beim Bitmap nunmal so ist. GetDIBits macht das ebenfalls)
+	/// CalledBy: ClsWinGDI::TakeScreenshot()
+	/// </summary>
+	/// <param name="hMemDC">Compatibles Memory HDC des Device Contextes vom Fensterhandle</param>
+	/// <param name="hBitmap">HBitmap Bitmap im Memory</param>
+	/// <param name="uiWindowFlag">Flag ob Quelle Desktopduplication oder Fensterhandle ist</param>
+	/// <returns>HRESULT</returns>
 	HRESULT ClsScreenshot::BitBltToFile(HDC hMemDC, HBITMAP hBitmap, UINT uiWindowFlag)
 	{
 		HRESULT hr = NULL;
