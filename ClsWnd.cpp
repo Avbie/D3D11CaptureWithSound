@@ -1,8 +1,5 @@
 #pragma once
-
 #include "ClsWnd.h"
-#include <sstream>
-
 /// <summary>
 /// Konstruktor von ClsWnd
 /// Creation of the registered Window
@@ -19,14 +16,18 @@
 /// <param name="uiHeight">Height</param>
 ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 {
+	m_bInFocus = FALSE;
 	m_hInstance = GetModuleHandle(NULL);
+	m_uiMyFlags = WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	m_mouseState = {};
+	m_Msg = {};
 	m_pClsD3D11Recording = pClsD3D11Recording;
 
 	m_hWnd = CreateWindowEx(
 		CS_OWNDC,							// Style Flags
 		ClsWndProc::GetMyClassName(),
 		pstrName,							// Name in Titelbar
-		m_iMyFlags,							// Flags wie das Window sich verhält
+		m_uiMyFlags,							// Flags wie das Window sich verhält
 		m_pClsD3D11Recording->GetXPos(),	// Start X
 		m_pClsD3D11Recording->GetYPos(),	// Start Y	
 		m_pClsD3D11Recording->GetWndXSize(),// Width
@@ -39,44 +40,12 @@ ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 	CreateMyMenu();							// Simple Menu
 	m_pClsD3D11Recording->SetHWND(m_hWnd);	// sets the WindowHandle in Superclass
 }//END-CONSTR
-
-/// <summary>
-/// Creates a simple Menu.
-/// - Needs a valid WindowHandle to identify the Window
-/// </summary>
-void ClsWnd::CreateMyMenu()
-{
-	ClsMenu oMyMenu(m_hWnd);
-}//END-FUNC
-
-BOOL ClsWnd::RunMsgLoop() {
-	// Stop and return false if window is not valid
-	if (!m_hWnd)
-		return FALSE;
-	/* PeekMessage:
-	* Liest die Msgs aus die vom Fenster gesendet werden
-	* PARAM: 
-	* 1. Speicher für zu lesende Msg
-	* 2. Von welchen Fenster soll Msg empfangen werden
-	* 3. MsgFilter von
-	* 4. MsgFilter bis (Flags um Msgs zu Filtern, damit wir nich talle bekommen, 0 = kein Filter)
-	* 5. Was soll mit Msg gemacht werden nachdem wir sie gelesen haben		
-	*/
-	while (PeekMessage(&m_Msg, m_hWnd, 0, 0, PM_REMOVE)) 
-	{
-		TranslateMessage(&m_Msg);	// setzt/fügt interne Param dazu
-		DispatchMessage(&m_Msg);	// ruft unsere Callback-Funktion auf 
-									// die wir im Wnd-Descriptor angegeben haben (ClsWndProc::MsgProcSetup/MsgProcRun)
-	}
-	return TRUE;
-}//END-RunMessageLoop
-
 /// <summary>
 /// Show or hide the Window
 /// </summary>
 /// <param name="bVisible">True: Show</param>
 /// <returns>True if success</returns>
-BOOL ClsWnd::SetVisibility(BOOL bVisible) 
+BOOL ClsWnd::SetVisibility(BOOL bVisible)
 {
 	// Return false if handle is not valid
 	if (m_hWnd == NULL)
@@ -88,7 +57,36 @@ BOOL ClsWnd::SetVisibility(BOOL bVisible)
 	else
 		return ShowWindow(m_hWnd, SW_HIDE);
 }//END-FUNC
-
+BOOL ClsWnd::RunMsgLoop() {
+	// Stop and return false if window is not valid
+	if (!m_hWnd)
+		return FALSE;
+	/* PeekMessage:
+	* Liest die Msgs aus die vom Fenster gesendet werden
+	* PARAM:
+	* 1. Speicher für zu lesende Msg
+	* 2. Von welchen Fenster soll Msg empfangen werden
+	* 3. MsgFilter von
+	* 4. MsgFilter bis (Flags um Msgs zu Filtern, damit wir nich talle bekommen, 0 = kein Filter)
+	* 5. Was soll mit Msg gemacht werden nachdem wir sie gelesen haben
+	*/
+	while (PeekMessage(&m_Msg, m_hWnd, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&m_Msg);	// setzt/fügt interne Param dazu
+		DispatchMessage(&m_Msg);	// ruft unsere Callback-Funktion auf 
+									// die wir im Wnd-Descriptor angegeben haben (ClsWndProc::MsgProcSetup/MsgProcRun)
+	}//END-WHILE send MSg to ClsWndProc::MsgProcRun
+	return TRUE;
+}//END-RunMessageLoop
+/// <summary>
+/// returns the WindowHandle
+/// CalledBy: not used yet
+/// </summary>
+/// <returns>WindowHandle</returns>
+HWND ClsWnd::GetHWND() 
+{ 
+	return m_hWnd; 
+}//END-FUNC
 /// <summary>
 /// Msg-Handling
 /// CalledBy: ClsWndProc::MsgProcRun(...)/ClsWnd::RunMsgLoop()
@@ -218,15 +216,14 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 
 	// Fallback default window proc
 	return DefWindowProc(hWnd, uiMsg, wParam, lParam);
-}
-
+}//END-FUNC ProcessTriggerMsg
 /// <summary>
 /// Loop this function until the About Dlg will be closed
 /// </summary>
 /// <param name="hDlg">Handle of the DlgBox</param>
 /// <param name="message">Msg by User</param>
-/// <param name="wParam"></param>
-/// <param name="lParam"></param>
+/// <param name="wParam">additional Parameter for the Msg</param>
+/// <param name="lParam">additional Parameter for the Msg</param>
 /// <returns></returns>
 INT_PTR CALLBACK ClsWnd::About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -245,4 +242,12 @@ INT_PTR CALLBACK ClsWnd::About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 		break;
 	}
 	return (INT_PTR)FALSE;
+}//END-FUNC
+/// <summary>
+/// Creates a simple Menu.
+/// - Needs a valid WindowHandle to identify the Window
+/// </summary>
+void ClsWnd::CreateMyMenu()
+{
+	ClsMenu oMyMenu(m_hWnd);
 }//END-FUNC

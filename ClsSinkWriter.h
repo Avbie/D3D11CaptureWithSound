@@ -19,7 +19,6 @@ struct DataForAudioThread
     UINT* uiFPS;
     HRESULT(**pReadAudioBuffer)(BYTE**, UINT*, UINT* uiFPS);
     HANDLE hEventReadAudioHWBuffer;
-
 };
 
 class ClsSinkWriter
@@ -52,7 +51,7 @@ private:
     LONGLONG m_lDurationAud;                        // In 100NanoSecondsUnits how long a AudioFrames needs for Playback
     LONGLONG m_lSampleTimeAud;                      // Sum of m_lDurationVid, identify the Position of each Frame
 
-    ClsCoreAudio CoreAudio;
+    ClsCoreAudio m_myClsCoreAudio;
     WAVEFORMATEX* m_pWaveFormat;
     BYTE* m_pAudioData;
     //FunctionPointer for ClsCoreAudio::ReadBuffer(...)
@@ -62,31 +61,36 @@ private:
 public:
     ClsSinkWriter();
     ~ClsSinkWriter();
-    void SetFrameData(FrameData** pFrameData);              // FrameFormat Information Structure
+    
+    /*********General*****************/
+    HRESULT LoopRecording();
+    HRESULT StartRecording();
+    HRESULT StopRecording();
+    HRESULT PrepareInputOutput();
+    /*********Video*******************/
+public: 
+    void SetBitRate(UINT32 uiBitRate);
     void SetBitReading(PicDataBitReading myBitReading);     // Sets Type of PixelData Interpretation (Bmp: Last to First Line)
     void SetFileName(const char* strFileName);
-    void SetAudio(BOOL bAudio);
-    HRESULT PrepareInputOutput();
-    HRESULT StartRecording();
-    HRESULT LoopRecording();
-    HRESULT StopRecording();
-    //Video
-private:
-    HRESULT WriteVideoDataSample(unsigned char* pFrameBuffer);
-    void FlipFormat(DWORD& dwDataRow, unsigned char* pFrameBuffer, BYTE** pPosition);
-    void CalcDurationVid();
-public:
     void SetFPS(UINT32 uiFPS);
-    void SetBitRate(UINT32 uiBitRate);
     void SetFormats(GUID MyInputFormat, GUID MyOutputFormat);
+    void SetFrameData(FrameData** pFrameData);              // FrameFormat Information Structure
     LONGLONG GetVideoFrameDuration();
-    // Audio
+private:
+    void CalcDurationVid();
+    void FlipFormat(DWORD& dwDataRow, unsigned char* pFrameBuffer, BYTE** pPosition);
+    HRESULT WriteVideoDataSample(unsigned char* pFrameBuffer);
+    /*********Audio*******************/
 public:
+    void SetAudio(BOOL bAudio);
     HRESULT StartReadAudioHWBufferThread();
 private:
-    WAVEFORMATEX** WaveFormat() { return &m_pWaveFormat; }
     void SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*, UINT*));
     void WaitForReadAudioHWBuffer();
     HRESULT WriteAudioDataSample();
     static DWORD WINAPI AudioHardwareBufferThread(LPVOID pParm);
+    ClsCoreAudio& CoreAudio();
+    WAVEFORMATEX** WaveFormat();
+   
+    
 };

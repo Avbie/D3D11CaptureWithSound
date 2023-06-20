@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Dxerr">
-      <UniqueIdentifier>{f4ba330f-07c0-4390-88df-4dfcc6fd36f5}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Macros">
       <UniqueIdentifier>{38d36835-4572-457d-9b41-b38efea422c5}</UniqueIdentifier>
     </Filter>
@@ -24,12 +21,6 @@
     </Filter>
     <Filter Include="Quelldateien\D3D11">
       <UniqueIdentifier>{e4b6aa68-dacc-437b-98db-5d70df6e3184}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Quelldateien\BitBlt">
-      <UniqueIdentifier>{f89025c4-96bb-4b92-8310-68b072ddd8b2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Headerdateien\BitBlt">
-      <UniqueIdentifier>{4252990d-2419-4468-8bdf-6667592345f5}</UniqueIdentifier>
     </Filter>
     <Filter Include="Headerdateien\SinkWriter">
       <UniqueIdentifier>{e5b0fc4d-794e-4859-8412-a1cfddd745f0}</UniqueIdentifier>
@@ -49,13 +40,28 @@
     <Filter Include="Quelldateien\D2D1">
       <UniqueIdentifier>{2b54bceb-d68e-43f7-aa32-936d310e501d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Headerdateien\ClsScreenShot">
-      <UniqueIdentifier>{d16e19f2-5976-4481-b159-7247118b0871}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Headerdateien\FPSSync">
       <UniqueIdentifier>{8e5cd0c5-a383-4ce6-8526-4b5952e87fd2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Quelldateien\ClsScreenshot">
+    <Filter Include="Headerdateien\Window">
+      <UniqueIdentifier>{cac6b957-9769-4f7c-9b6c-06519c65f0a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\Window">
+      <UniqueIdentifier>{654835b8-51e3-4573-8730-67efcbfb61ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\ScreenShot">
+      <UniqueIdentifier>{d16e19f2-5976-4481-b159-7247118b0871}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shader">
+      <UniqueIdentifier>{b887d4c8-d385-4031-b99c-04a54fabaf79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headerdateien\WinGDI">
+      <UniqueIdentifier>{4252990d-2419-4468-8bdf-6667592345f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\WinGDI">
+      <UniqueIdentifier>{f89025c4-96bb-4b92-8310-68b072ddd8b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Quelldateien\Screenshot">
       <UniqueIdentifier>{fea2c932-282c-4bea-a796-a36de5e68550}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -73,16 +79,13 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="ClsWnd.h">
-      <Filter>Headerdateien</Filter>
+      <Filter>Headerdateien\Window</Filter>
     </ClInclude>
     <ClInclude Include="ClsWndProc.h">
-      <Filter>Headerdateien</Filter>
+      <Filter>Headerdateien\Window</Filter>
     </ClInclude>
     <ClInclude Include="ClsMenu.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="stb_image.h">
-      <Filter>Headerdateien</Filter>
+      <Filter>Headerdateien\Window</Filter>
     </ClInclude>
     <ClInclude Include="ClsTimer.h">
       <Filter>Headerdateien</Filter>
@@ -93,9 +96,6 @@
     <ClInclude Include="D3DBuffer.h">
       <Filter>Headerdateien\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="ClsWndCallback.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="ClsWndHandle.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -103,9 +103,6 @@
       <Filter>Headerdateien\D3D11</Filter>
     </ClInclude>
     <ClInclude Include="ClsSinkWriter.h">
-      <Filter>Headerdateien\SinkWriter</Filter>
-    </ClInclude>
-    <ClInclude Include="SinkWriter.h">
       <Filter>Headerdateien\SinkWriter</Filter>
     </ClInclude>
     <ClInclude Include="ClsSilence.h">
@@ -118,13 +115,13 @@
       <Filter>Headerdateien\D2D1</Filter>
     </ClInclude>
     <ClInclude Include="ClsScreenshot.h">
-      <Filter>Headerdateien\ClsScreenShot</Filter>
+      <Filter>Headerdateien\ScreenShot</Filter>
     </ClInclude>
     <ClInclude Include="ClsFpsSync.h">
       <Filter>Headerdateien\FPSSync</Filter>
     </ClInclude>
     <ClInclude Include="ClsWinGDI.h">
-      <Filter>Headerdateien\BitBlt</Filter>
+      <Filter>Headerdateien\WinGDI</Filter>
     </ClInclude>
     <ClInclude Include="ClsD3D11Recording.h">
       <Filter>Headerdateien</Filter>
@@ -135,10 +132,10 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="ClsWndProc.cpp">
-      <Filter>Quelldateien</Filter>
+      <Filter>Quelldateien\Window</Filter>
     </ClCompile>
     <ClCompile Include="ClsWnd.cpp">
-      <Filter>Quelldateien</Filter>
+      <Filter>Quelldateien\Window</Filter>
     </ClCompile>
     <ClCompile Include="ClsTimer.cpp">
       <Filter>Quelldateien</Filter>
@@ -162,10 +159,13 @@
       <Filter>Quelldateien\D2D1</Filter>
     </ClCompile>
     <ClCompile Include="ClsScreenshot.cpp">
-      <Filter>Quelldateien\ClsScreenshot</Filter>
+      <Filter>Quelldateien\Screenshot</Filter>
     </ClCompile>
     <ClCompile Include="ClsWinGDI.cpp">
-      <Filter>Quelldateien\BitBlt</Filter>
+      <Filter>Quelldateien\WinGDI</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsWndHandle.cpp">
+      <Filter>Quelldateien\WinGDI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -188,8 +188,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="VertexShader.hlsl" />
-    <FxCompile Include="PixelShader.hlsl" />
-    <FxCompile Include="VertexShader1.hlsl" />
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
+    <FxCompile Include="PixelShader.hlsl">
+      <Filter>Shader</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

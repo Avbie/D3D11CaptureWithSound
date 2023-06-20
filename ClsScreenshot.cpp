@@ -14,16 +14,7 @@ namespace GDI
 		m_pInfoHeader = NULL;
 		m_strBmpFileName = BMPFILENAME;
 		m_pFrameData = NULL;
-	}
-	/// <summary>
-	/// Set the FrameDataPointer. Includes Information about the FrameFormat.
-	/// CalledBy: SuperClass ClsD3D11Recording
-	/// </summary>
-	/// <param name="ppFrameData">Adress of the Pointer of the FrameDataStructure</param>
-	void ClsScreenshot::SetFrameData(FrameData** ppFrameData)
-	{
-		m_pFrameData = *ppFrameData;
-	}//END-FUNC
+	}//END-CONS
 	/// <summary>
 	/// Create the two Headers for a BitmapFile.
 	/// m_pFileData includes the whole Data of the BitmapFile.
@@ -63,7 +54,52 @@ namespace GDI
 
 		m_pPixelData = &m_pFileData[m_pFileHeader->bfOffBits];		// Pointer zu Pixeldaten mit Hilfe des Offsets von den beiden Headern
 	}//END-FUNC
+	/// <summary>
+	/// Generate a two-color-Picture
+	/// It was used for testing
+	/// </summary>
+	void ClsScreenshot::GenerateBitBltData()
+	{
+		//unsigned char* pData = NULL;
+		D3D11_TEXTURE2D_DESC TextureDesc = {};									// TextureDescription für TextureObj
+		UINT& uiWidth = m_pFrameData->uiWidthDest;
+		UINT& uiHeight = m_pFrameData->uiHeightDest;
+		UINT& uiBpp = m_pFrameData->uiBpp;
+		unsigned char* pData = m_pFrameData->pData;
 
+		for (int y = 0; y < uiHeight; ++y)
+		{
+			for (int x = 0; x < uiWidth; ++x)
+			{
+				if (x <= 1000)
+				{
+					pData[y * uiWidth * uiBpp + x * uiBpp] = 0xff; // red, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 1] = 0xff; // green, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 2] = 0x00; // blue, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
+				}
+				else
+				{
+					pData[y * uiWidth * uiBpp + x * uiBpp] = 0xff; // red, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 1] = 0x00; // green, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 2] = 0x00; // blue, 8 Bit
+					pData[y * uiWidth * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
+					// mit (RGBQUAD*)pData;
+					//pRGBQuad->rgbReserved = pData[y * uiWidthDest * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
+				}//END-IF
+			}//END-FOR x
+
+		}//END-FOR y
+	}//END-FUNC
+	/// <summary>
+	/// Set the FrameDataPointer. Includes Information about the FrameFormat.
+	/// CalledBy: SuperClass ClsD3D11Recording
+	/// </summary>
+	/// <param name="ppFrameData">Adress of the Pointer of the FrameDataStructure</param>
+	void ClsScreenshot::SetFrameData(FrameData** ppFrameData)
+	{
+		m_pFrameData = *ppFrameData;
+	}//END-FUNC
 	/// <summary>
 	/// Fall1:
 	/// Beim Kopieren, wenn Fenster die Quelle ist bzw keine Desktopduplication
@@ -139,42 +175,5 @@ namespace GDI
 		GlobalUnlock(m_hHeaderHandle);						// allocateten Speicher für das BMP-File wieder freigeben
 		GlobalFree(m_hHeaderHandle);						// Speicher freigeben
 		return hr;
-	}//END-FUNC
-	/// <summary>
-	/// Generate a two-color-Picture
-	/// It was used for testing
-	/// </summary>
-	void ClsScreenshot::GenerateBitBltData()
-	{
-		//unsigned char* pData = NULL;
-		D3D11_TEXTURE2D_DESC TextureDesc = {};									// TextureDescription für TextureObj
-		UINT& uiWidth = m_pFrameData->uiWidthDest;
-		UINT& uiHeight = m_pFrameData->uiHeightDest;
-		UINT& uiBpp = m_pFrameData->uiBpp;
-		unsigned char* pData = m_pFrameData->pData;
-
-		for (int y = 0; y < uiHeight; ++y)
-		{
-			for (int x = 0; x < uiWidth; ++x)
-			{
-				if (x <= 1000)
-				{
-					pData[y * uiWidth * uiBpp + x * uiBpp] = 0xff; // red, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 1] = 0xff; // green, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 2] = 0x00; // blue, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
-				}
-				else
-				{
-					pData[y * uiWidth * uiBpp + x * uiBpp] = 0xff; // red, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 1] = 0x00; // green, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 2] = 0x00; // blue, 8 Bit
-					pData[y * uiWidth * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
-					// mit (RGBQUAD*)pData;
-					//pRGBQuad->rgbReserved = pData[y * uiWidthDest * uiBpp + x * uiBpp + 3] = 0xff; // alpha, 8 Bit
-				}//END-IF
-			}//END-FOR x
-
-		}//END-FOR y
 	}//END-FUNC
 }//END-NAMESPACE GDI

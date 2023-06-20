@@ -1,7 +1,5 @@
 #pragma once
 #include "framework.h"
-//#include "ClsDataContainer.h"
-#include "ClsWndCallback.h"
 #include "ClsWndHandle.h"
 #include "ClsScreenshot.h"
 
@@ -15,29 +13,33 @@ namespace GDI
 		HDC m_hDisplayDC;
 		HBITMAP m_hBitmap;
 		UINT m_uiWindowFlag;
-		ClsWndHandle m_MyClsWndHandle;
 		CopyMethod m_myCpyMethod;
 		const char* m_strTitle;
 		char* m_strBmpFileName;
 		FrameData* m_pFrameData;
 		
+		
+		ClsScreenshot m_myClsScreenShot;
+		ClsWndHandle m_MyClsWndHandle;
 	public:
 		ClsWinGDI();
 		~ClsWinGDI();
 	public:
-		ClsScreenshot ScreenShot;
-	public:
-		void SetFrameData(FrameData** pFrameData);
+		/******Get-Set-Methods********/
+		ClsScreenshot& ScreenShot();
 		void SetCpyMethod(CopyMethod& myCpyMethod);
+		void SetFrameData(FrameData** pFrameData);
 		void SetSrcWndTitle(const char* strTitle);
-		HRESULT GetBitBltDataFromWindow();
+		/*****************************/
 		HRESULT FindSetWindow();
+		HRESULT GetBitBltDataFromWindow();
 		HRESULT TakeScreenshot();
 	private:
+		static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
 		BOOL IsScaled();
 		BOOL IsWndTitle();
 		HRESULT AllocateMemDC();
-		HRESULT GetResolutionOfWndHandle();
 		HRESULT CopyBitmapDataToMemDC();
+		HRESULT GetResolutionOfWndHandle();
 	};
 }

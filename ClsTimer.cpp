@@ -9,8 +9,7 @@ using namespace std::chrono;
 ClsTimer::ClsTimer() noexcept
 {
 	m_myTimeStamp = steady_clock::now();
-}
-
+}//END-FUNC
 /// <summary>
 /// Difference between the old and a new Timestamp in Seconds
 /// Not used yet
@@ -23,7 +22,6 @@ float ClsTimer::Mark() noexcept
 	const duration<float> frameTime = m_myTimeStamp - myOldTimeStamp;
 	return frameTime.count();
 }//END-FUNC
-
 /// <summary>
 /// Same Function like Mark()
 /// </summary>

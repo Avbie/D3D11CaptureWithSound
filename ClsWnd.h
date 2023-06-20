@@ -18,25 +18,23 @@ struct MouseState {
 /// </summary>
 class ClsWnd
 {
-public:
-	ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording);
-	BOOL SetVisibility(BOOL bVisible);
-	BOOL RunMsgLoop();
-	LRESULT ProcessTriggeredMsg(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
-	HWND GetHWND() { return m_hWnd; }
 private:
-	void CreateMyMenu();
-public:
-	static INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
-
-private:
-	ClsD3D11Recording* m_pClsD3D11Recording;
-	//WndProperty m_MyWndProp;
+	BOOL m_bInFocus;
 	HWND m_hWnd;
 	HINSTANCE m_hInstance;
-	MSG m_Msg = {};
-	int m_iMyFlags = WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
-	BOOL m_bInFocus = FALSE;
+	UINT m_uiMyFlags;
 	std::bitset<256> m_keyState;
-	MouseState m_mouseState = {};
+	MouseState m_mouseState;
+	MSG m_Msg;
+	ClsD3D11Recording* m_pClsD3D11Recording;
+public:
+	ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording);
+public:
+	BOOL SetVisibility(BOOL bVisible);
+	BOOL RunMsgLoop();
+	HWND GetHWND();
+	LRESULT ProcessTriggeredMsg(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
+private:
+	void CreateMyMenu();
 };

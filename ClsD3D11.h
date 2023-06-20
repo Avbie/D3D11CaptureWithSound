@@ -67,41 +67,39 @@ namespace D3D
 		ClsD3D11();
 		~ClsD3D11();
 	public:
-		void SetWnd(HWND hWnd);
-		void SetFrameData(FrameData** pFrameData);
-		void SetCpyMethod(CopyMethod& myCpyMethod);
-		void SetPickedMonitor(UINT uiMonitor);
 		void SetClientRect(RECT myClientRect);
+		void SetCpyMethod(CopyMethod& myCpyMethod);
+		void SetFrameData(FrameData** pFrameData);
+		void SetPickedMonitor(UINT uiMonitor);
+		void SetWnd(HWND hWnd);
+		
+		HRESULT BitBltDataToRT();
+		HRESULT CreateAndSetSampler();
+		HRESULT CreateAndSetShader();
+		HRESULT CreateBuffers();
+		HRESULT CreateD3D11Texture();
 		HRESULT CreateDevice();
+		HRESULT CreateInputLayout();
+		HRESULT CreateShaderView();
 		HRESULT CreateSwapChain();
 		HRESULT CreateSwapChainBuffer();
-		HRESULT CreateBuffers();
-		HRESULT SetConstantBuffer();
-		HRESULT CreateAndSetSampler();
-		HRESULT CreateD3D11Texture();
-		HRESULT CreateShaderView();
-		
-		HRESULT CreateInputLayout();
-		HRESULT BitBltDataToRT();
-		HRESULT PresentTexture();
 		HRESULT PreparePresentation();
-		HRESULT CreateAndSetShader();
+		HRESULT PresentTexture();
+		HRESULT SetConstantBuffer();
 	private:
 		
-		HRESULT CreateVertexBuffer();
-		HRESULT CreateIndexBuffer();
 		HRESULT CreateConstantBuffer();
+		HRESULT CreateIndexBuffer();
+		HRESULT CreatePixelShader();
+		HRESULT CreateVertexBuffer();
+		HRESULT CreateVertexShader();
+		HRESULT BitBltDataToD2D1Resource();
+		HRESULT BitBltDataToD3D11SubResource();
+		HRESULT DesktopDuplToRAM(); // only full Desktop of a Monitor
+		HRESULT GetDesktopDuplByGPU(); // only full Desktop of a Monitor
 		HRESULT InitD2D1();
 		HRESULT InitDesktopDuplication();
-		HRESULT BitBltDataToD3D11SubResource();
-		HRESULT BitBltDataToD2D1Resource();
-		HRESULT UpdateMySubResource();
-		HRESULT GetDesktopDuplByGPU(); // only full Desktop of a Monitor
-		HRESULT DesktopDuplToRAM(); // only full Desktop of a Monitor
 		HRESULT PrepareDesktopDuplToRAM(); // Prepare Variables for RAMDupl
-		
-		HRESULT CreateVetexShader();
-		HRESULT CreatePixelShader();
-
+		HRESULT UpdateMySubResource();
 	};
 }

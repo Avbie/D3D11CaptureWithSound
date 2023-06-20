@@ -14,6 +14,15 @@ ReBuffer ClsCoreAudio::m_myRebuffer;
 /// <param name="pCopyDataSample">FunctionPtr of SinkWriter WriteFrame</param>
 ClsCoreAudio::ClsCoreAudio()
 {
+    // static
+    m_uiNumFrames = 0;
+    m_uiPacketLength = 0;
+    m_lCurDurationHardwareBuffer = 0;
+    m_pWaveFormat = NULL;
+    m_pData = NULL;
+    m_pCaptureClient.ReleaseAndGetAddressOf();
+
+    // general
     m_hEventPlayingSilence = NULL;
     m_hThreadPlaySilence = NULL;
     m_uiNumFramesHWBuffer = 0;
@@ -25,50 +34,27 @@ ClsCoreAudio::ClsCoreAudio()
     m_pDevice.ReleaseAndGetAddressOf();
     m_pEnumerator.ReleaseAndGetAddressOf();
     m_pAudioClient.ReleaseAndGetAddressOf();
-
-    //static
-    m_uiNumFrames = 0;
-    m_uiPacketLength = 0;
-    m_lCurDurationHardwareBuffer = 0;
-    m_pWaveFormat = NULL;
-    m_pData = NULL;
-
-    m_pCaptureClient.ReleaseAndGetAddressOf();
 }
-
 /// <summary>
-/// Static Function, called by a new Thread.
-/// CalledBy: PlaySilence()
+/// Destructor
 /// </summary>
-/// <param name="pParm">pParm is a "zipped" struct with Events</param>
-/// <returns>always 0</returns>
-DWORD WINAPI ClsCoreAudio::StartSilence(LPVOID pParm)
+ClsCoreAudio::~ClsCoreAudio()
 {
-    ClsSilence oClsSilence;
-    oClsSilence.BlankAudioPlayback(pParm);
-    return 0;
-}//END-FUNC
-
+    CoTaskMemFree(m_pWaveFormat);
+    m_pCaptureClient.Reset();
+    m_pDevice.Reset();
+    m_pEnumerator.Reset();
+    m_pAudioClient.Reset();
+}//END-CONS
 /// <summary>
-/// Inits a IMMDeviceEnumerator per CoCreateInstance.
-/// - Will be init by COM-Interface (Binar). Inherits the Interface with the specific functions.
-/// Enumerator can list any EndPointAudioDevices
+/// Calculate the Size of the Hardware AudioBuffer of the Soundcard
+/// CalledBy: InitAudioClient(...)
 /// </summary>
-/// <returns>HRESULT</returns>
-HRESULT ClsCoreAudio::InitEngine()
+void ClsCoreAudio::CalcCurrentDurationOfBuffer()
 {
-    HRESULT hr = NULL;
-    // Creates an Enum of AudioEndpointDevices
-    HR_RETURN_ON_ERR(hr, CoCreateInstance(
-        CLSID_MMDeviceEnumerator, // ID gibt an welches IF verwendet bzw. welches Obj. erstellt wird
-        NULL,
-        CLSCTX_ALL,
-        /*CLSCTX_INPROC_SERVER - läuft im selben Prozess
-            CLSCTX_INPROC_HANDLER - läuft im selben prozess wie das aufrufende Programm
-            CLSCTX_LOCAL_SERVER
-            CLSCTX_REMOTE_SERVER*/
-        IID_PPV_ARGS(&m_pEnumerator)));
-    return hr;
+    // Ermittelt die Buffersize als Zeitangabe in 100erNanosekundenEinheiten
+    // Ist  Größe des akt. HardwareBuffers
+    m_lCurDurationHardwareBuffer = (double)MULTIPL100NS * m_uiNumFramesHWBuffer / m_pWaveFormat->nSamplesPerSec;
 }//END-FUNC
 /// <summary>
 /// Init. the AudioClient in Loopback-Mode. 
@@ -110,9 +96,9 @@ HRESULT ClsCoreAudio::InitAudioClient(WAVEFORMATEX** ppWaveFormat)
         m_lDurationHardwareBuffer,          // Set the Buffersize in TimeUnits
         0,
         m_pWaveFormat,                      // format description
-        NULL));                              // bindet den stream an die audio session, bei null, neue session
+        NULL));                             // bindet den stream an die audio session, bei null, neue session
 
-    
+
     // Get BufferSize back in FramesCount
     HR_RETURN_ON_ERR(hr, m_pAudioClient->GetBufferSize(&m_uiNumFramesHWBuffer)); // Get the max. Buffersize back as FramesCount and not in TimeUnits
     // IF for more functionality
@@ -122,6 +108,44 @@ HRESULT ClsCoreAudio::InitAudioClient(WAVEFORMATEX** ppWaveFormat)
 
     CalcCurrentDurationOfBuffer();          // Größe/Länge des HardwareBuffers der Soundkarte
 
+    return hr;
+}//END-FUNC
+/// <summary>
+/// Inits a IMMDeviceEnumerator per CoCreateInstance.
+/// - Will be init by COM-Interface (Binar). Inherits the Interface with the specific functions.
+/// Enumerator can list any EndPointAudioDevices
+/// </summary>
+/// <returns>HRESULT</returns>
+HRESULT ClsCoreAudio::InitEngine()
+{
+    HRESULT hr = NULL;
+    // Creates an Enum of AudioEndpointDevices
+    HR_RETURN_ON_ERR(hr, CoCreateInstance(
+        CLSID_MMDeviceEnumerator, // ID gibt an welches IF verwendet bzw. welches Obj. erstellt wird
+        NULL,
+        CLSCTX_ALL,
+        /*CLSCTX_INPROC_SERVER - läuft im selben Prozess
+            CLSCTX_INPROC_HANDLER - läuft im selben prozess wie das aufrufende Programm
+            CLSCTX_LOCAL_SERVER
+            CLSCTX_REMOTE_SERVER*/
+        IID_PPV_ARGS(&m_pEnumerator)));
+    return hr;
+}//END-FUNC
+/// <summary>
+/// Finish the record/stream of Audio
+/// CalledBy: SuperClass D3D11Recording::StopRecording()
+/// </summary>
+/// <returns>HRESULT</returns>
+HRESULT ClsCoreAudio::FinishStream()
+{
+    HRESULT hr = NULL;
+    HR_RETURN_ON_ERR(hr, m_pAudioClient->Stop());           // Stop recording.
+
+    m_myEvents.bStopped = true;                             // forces a break in the slientplay loop/thread
+    WaitForSingleObject(m_hThreadPlaySilence, INFINITE);    // wait until the SilentPlayThread finished (Thread join)
+
+    CloseHandle(m_hThreadPlaySilence);                      // thread handle schliessen
+    CloseHandle(m_hEventPlayingSilence);
     return hr;
 }//END-FUNC
 /// <summary>
@@ -143,7 +167,7 @@ HRESULT ClsCoreAudio::PlaySilence()
     // New Thread calls StartSilence with m_myEvents as Param
     m_hThreadPlaySilence = CreateThread(NULL, 0, ClsCoreAudio::StartSilence, &m_myEvents, 0, NULL);
     // If Thread cannot be created
-    if (NULL == m_hThreadPlaySilence) 
+    if (NULL == m_hThreadPlaySilence)
     {
         printf("CreateThread failed: last error is %u\n", GetLastError());
         CloseHandle(m_hEventPlayingSilence);
@@ -156,28 +180,6 @@ HRESULT ClsCoreAudio::PlaySilence()
 
     return hr;
 }//END-FUNC
-/// <summary>
-/// Calculate the Size of the Hardware AudioBuffer of the Soundcard
-/// CalledBy: InitAudioClient(...)
-/// </summary>
-void ClsCoreAudio::CalcCurrentDurationOfBuffer()
-{
-    // Ermittelt die Buffersize als Zeitangabe in 100erNanosekundenEinheiten
-    // Ist  Größe des akt. HardwareBuffers
-    m_lCurDurationHardwareBuffer = (double)MULTIPL100NS * m_uiNumFramesHWBuffer / m_pWaveFormat->nSamplesPerSec;
-}//END-FUNC
-/// <summary>
-/// Convertes it from 100er NanosecondUnits in Milliseconds
-/// CalledBy: ReadBuffer(...)
-/// 10000 100erNs = 1000 Microseconds = 1 Millisecond  
-/// </summary>
-/// <param name="lValue">Value in 100er Nanosecond Units</param>
-/// <returns></returns>
-REFERENCE_TIME ClsCoreAudio::Ns100UnitsInMs(REFERENCE_TIME l100NanosecondUnits)
-{
-    return l100NanosecondUnits / 10000;
-}//END-FUNC
-
 /// <summary>
 /// Static Function. Will be set in ClsSinkWriter::SetReadAudioBufferCallback(...) as a FunctionPointer.
 /// - This Functionpointer ClsSinkWriter::m_pReadAudioBufferwill be zipped in a struct 
@@ -216,17 +218,17 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
     // Loop as long the Number of AudioFrames is too small for one VideoFrame
     while (uiAudioFramesPerVidFrame > uiFramesInReBuffer)
     {
-       /*
-       * packetLength ist ein Paket von vielen im Hardwarebuffer
-       * wenn ein Paket mal Größe 0 haben sollte, dann ist app aufm aktuellen stand wie die hardware
-       * -> app kurz schlafen, derweil füllt sich hardwarebuffer wieder
-       * -> neue pakete können abgeholt werden, bis app wieder auf hardware aufholt
-       * -> |----------------------------| Hardwarebuffer
-       *    |----|-----|----|----|---|---|
-       *     pck1  pck2 pck3
-       * pAudioClient->GetCurrentPadding gibt an wieviele frames gelesen wurden
-       * NumFrames-padding = pakete übrig die noch nicht gelesen wurden
-       */
+        /*
+        * packetLength ist ein Paket von vielen im Hardwarebuffer
+        * wenn ein Paket mal Größe 0 haben sollte, dann ist app aufm aktuellen stand wie die hardware
+        * -> app kurz schlafen, derweil füllt sich hardwarebuffer wieder
+        * -> neue pakete können abgeholt werden, bis app wieder auf hardware aufholt
+        * -> |----------------------------| Hardwarebuffer
+        *    |----|-----|----|----|---|---|
+        *     pck1  pck2 pck3
+        * pAudioClient->GetCurrentPadding gibt an wieviele frames gelesen wurden
+        * NumFrames-padding = pakete übrig die noch nicht gelesen wurden
+        */
         HR_RETURN_ON_ERR(hr, m_pCaptureClient->GetNextPacketSize(&m_uiPacketLength));
         if (m_uiPacketLength == 0)
         {
@@ -234,20 +236,20 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
             // to large values will affect the MainLoop
             Sleep(Ns100UnitsInMs(m_lCurDurationHardwareBuffer) / 2);
             hr = m_pCaptureClient->GetNextPacketSize(&m_uiPacketLength);
-        }
+        }//END-IF
         HR_RETURN_ON_ERR(hr, m_pCaptureClient->GetBuffer(
             &m_pData,
             &m_uiNumFrames,
             &dwFlags, &uiBeginFrame, &uiEndFrame));
         // Used Bytes of the current used HardwareBuffer
-        uiTotalAudioBytes = m_uiNumFrames * uiAFrameSize;   
+        uiTotalAudioBytes = m_uiNumFrames * uiAFrameSize;
         // Push the Data of the Hardware buffer in our Rebuffer
         m_myRebuffer.PushX(m_pData, uiTotalAudioBytes);
         // keep the total Number of Frames in the Rebuffer
         uiFramesInReBuffer = uiFramesInReBuffer + m_uiNumFrames;
         // must be released befor we can call GetBuffer again
         m_pCaptureClient->ReleaseBuffer(m_uiNumFrames);
-    }
+    }//END-WHILE Frames
     // allocate the Bytes of AudioFrames that are needed for one VideoFrame
     *pAudioData = (BYTE*)malloc(uiAudioFramesPerVidFrame * uiAFrameSize);
     // Gets the Data of Audio for exactly one VideoFrame
@@ -256,7 +258,6 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
     HR_RETURN_ON_ERR(hr, ReleaseBuffer());
     return hr;
 }//END-FUNC
-
 /// <summary>
 /// Releases the HardwareBuffer
 /// Must be called befor we can get the next one.
@@ -269,32 +270,27 @@ HRESULT ClsCoreAudio::ReleaseBuffer()
     HR_RETURN_ON_ERR(hr, m_pCaptureClient->ReleaseBuffer(m_uiNumFrames));
 
     return hr;
-}
-/// <summary>
-/// Finish the record/stream of Audio
-/// CalledBy: SuperClass D3D11Recording::StopRecording()
-/// </summary>
-/// <returns>HRESULT</returns>
-HRESULT ClsCoreAudio::FinishStream()
-{
-    HRESULT hr = NULL;
-    HR_RETURN_ON_ERR(hr, m_pAudioClient->Stop());           // Stop recording.
-
-    m_myEvents.bStopped = true;                             // forces a break in the slientplay loop/thread
-    WaitForSingleObject(m_hThreadPlaySilence, INFINITE);    // wait until the SilentPlayThread finished (Thread join)
-
-    CloseHandle(m_hThreadPlaySilence);                      // thread handle schliessen
-    CloseHandle(m_hEventPlayingSilence);
-    return hr;
 }//END-FUNC
 /// <summary>
-/// Destructor
+/// Static Function, called by a new Thread.
+/// CalledBy: PlaySilence()
 /// </summary>
-ClsCoreAudio::~ClsCoreAudio()
+/// <param name="pParm">pParm is a "zipped" struct with Events</param>
+/// <returns>always 0</returns>
+DWORD WINAPI ClsCoreAudio::StartSilence(LPVOID pParm)
 {
-    CoTaskMemFree(m_pWaveFormat);
-    m_pCaptureClient.Reset();
-    m_pDevice.Reset();
-    m_pEnumerator.Reset();
-    m_pAudioClient.Reset();
-}//END-CONS
+    ClsSilence oClsSilence;
+    oClsSilence.BlankAudioPlayback(pParm);
+    return 0;
+}//END-FUNC
+/// <summary>
+/// Convertes it from 100er NanosecondUnits in Milliseconds
+/// CalledBy: ReadBuffer(...)
+/// 10000 100erNs = 1000 Microseconds = 1 Millisecond  
+/// </summary>
+/// <param name="lValue">Value in 100er Nanosecond Units</param>
+/// <returns></returns>
+REFERENCE_TIME ClsCoreAudio::Ns100UnitsInMs(REFERENCE_TIME l100NanosecondUnits)
+{
+    return l100NanosecondUnits / 10000;
+}//END-FUNC

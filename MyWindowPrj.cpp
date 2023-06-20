@@ -1,6 +1,7 @@
 // MyWindowPrj.cpp : Definiert den Einstiegspunkt für die Anwendung.
 #include "framework.h"
 #include "MyWindowPrj.h"
+// Singleton in ClsWndProc
 #include "ClsWndProc.h"
 #include "ClsWnd.h"
 
@@ -37,7 +38,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	myVideoDescriptor.bIsAudio = true;
 	myVideoDescriptor.strWndTitle = "Editor";
 	myVideoDescriptor.uiFPS = 60;
-	myVideoDescriptor.myCpyMethod = CopyMethod::DesktopDupl;
+	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
 	myVideoDescriptor.uiMonitorID = MAINMONITOR;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);
@@ -48,6 +49,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 	oMyWnd.SetVisibility(true);								// Fenster sichtbar machen
 	
+
 	myClsD3D11Recording.Init3DWindow();
 	myClsD3D11Recording.PrepareRecording();
 

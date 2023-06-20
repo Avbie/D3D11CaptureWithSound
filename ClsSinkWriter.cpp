@@ -1,9 +1,5 @@
 #include "ClsSinkWriter.h"
 
-void ClsSinkWriter::SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*,UINT*))
-{
-    m_pReadAudioBuffer = pReadAudioBuffer;
-}
 /// <summary>
 /// Constructor
 /// Inits Library for the SinkWriter
@@ -52,90 +48,80 @@ ClsSinkWriter::ClsSinkWriter()
     m_myDataForAudioThread.pReadAudioBuffer = &m_pReadAudioBuffer;
 
     SetReadAudioHWBufferCallback(ClsCoreAudio::ReadBuffer);
-    CoreAudio.InitAudioClient(WaveFormat());
+    CoreAudio().InitAudioClient(WaveFormat());
 }//END-FUNC
 /// <summary>
-/// Set the FrameDataPointer. Includes Information about the FrameFormat.
+/// Destructor
+/// Reset the Smartpointer
+/// Shutdown MediaFoundation
 /// </summary>
-/// <param name="ppFrameData">Adress of the Pointer of the FrameDataStructure</param>
-void ClsSinkWriter::SetFrameData(FrameData** ppFrameData)
+ClsSinkWriter::~ClsSinkWriter()
 {
-    m_pFrameData = *ppFrameData;
-    m_uiBitRate = m_pFrameData->uiHeightDest * m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
-    m_dwDataRow = m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
-}
+    m_pBuffer.Reset();
+    m_pSample.Reset();
+    m_pSinkWriter.Reset();
+    MFShutdown();
+}//END-FUNC
+/*************************************************************************************************
+**************************************GENERAL-METHODES********************************************
+*************************************************************************************************/
 /// <summary>
-/// Sets the Bitreading method: Standard or Invert
+/// Copying the Frame into the Sample.
+/// Video will be builded Sample by Sample.
 /// </summary>
-/// <param name="myBitReading"></param>
-void ClsSinkWriter::SetBitReading(PicDataBitReading myBitReading)
+/// <returns>HRESULT</returns>
+HRESULT ClsSinkWriter::LoopRecording()
 {
-    m_myBitReading = myBitReading;
-}
-/// <summary>
-/// Set the FPS of the VideoFile for the Sinkwriter
-/// </summary>
-/// <param name="uiFPS">FPS</param>
-void ClsSinkWriter::SetFPS(UINT32 uiFPS)
-{
-    m_uiFPS = uiFPS;
-    CalcDurationVid();
-}
-/// <summary>
-/// Set the BitRate of the VideoFile for the Sinkwriter
-/// </summary>
-/// <param name="uiBitRate"></param>
-void ClsSinkWriter::SetBitRate(UINT32 uiBitRate)
-{
-    m_uiBitRate = uiBitRate;
+    HRESULT hr = NULL;
+    unsigned char* pData = m_pFrameData->pData;
+    if (m_bFinished)
+        return S_OK;
+
+    WaitForReadAudioHWBuffer();
+    HR_RETURN_ON_ERR(hr, WriteAudioDataSample());
+    HR_RETURN_ON_ERR(hr, WriteVideoDataSample(pData));
+    m_lSampleTimeVid += m_lDurationVid; // Zeit pro Frame in 100NanoSekundenEinheiten
+
+    return hr;
 }//END-FUNC
 /// <summary>
-/// Sets the Input and/or Output Format.
-/// When Parameter is NULL, nothing will change
+/// Enables that the Sinkwriter can accept Data
 /// </summary>
-/// <param name="MyInputFormat">SinkWriter InputFormat</param>
-/// <param name="MyOutputFormat">SinkWriter OutputFormat</param>
-void ClsSinkWriter::SetFormats(GUID MyInputFormat, GUID MyOutputFormat)
+/// <returns>HRESULT</returns>
+HRESULT ClsSinkWriter::StartRecording()
 {
-    m_myInputFormat = MyInputFormat;
-    m_myOutputFormat = MyOutputFormat;
-}
-/// <summary>
-/// Set the Name of the VideoFile for the Sinkwriter (char* to WideChar[256])
-/// </summary>
-/// <param name="strFileName"></param>
-void ClsSinkWriter::SetFileName(const char* strFileName)
-{
-    // const char* to wchar
-    size_t uiWritten;
-    mbstowcs_s(&uiWritten, m_wstrFilename, strlen(strFileName) + 1, strFileName, strlen(strFileName));
+    HRESULT hr = NULL;
+    UINT& uiPixelDataSize = m_pFrameData->uiPixelDataSize;
+    // Tell the sink writer to start accepting data.
+    HR_RETURN_ON_ERR(hr, m_pSinkWriter->BeginWriting());
+    // Create a new memory buffer.
+    HR_RETURN_ON_ERR(hr, MFCreateMemoryBuffer(uiPixelDataSize, &m_pBuffer));
+    // Set the data length of the buffer.
+    HR_RETURN_ON_ERR(hr, m_pBuffer->SetCurrentLength(uiPixelDataSize));
+
+    return hr;
 }//END-FUNC
-void ClsSinkWriter::SetAudio(BOOL bAudio)
-{
-    m_bIsAudio = bAudio;
-}
 /// <summary>
-/// Calculates the Duration of a VideoFrame
+/// Finish the OutputVideoFile
 /// </summary>
-void ClsSinkWriter::CalcDurationVid()
+/// <returns>HRESULT</returns>
+HRESULT ClsSinkWriter::StopRecording()
 {
-    m_lDurationVid = 1000 * 1000 * 10 / m_uiFPS;
-    //UINT64 b;
-    //MFFrameRateToAverageTimePerFrame(m_uiFPS, 1, &b);
-    //m_lDurationVid = b;
-    // Angabe in  Dauer in 100NanosekundenEinheiten
-    // Wieviele 100-NanosekundenEinheiten ein Bild angezeigt werden soll:
-    // 30FPS: 1/30 = 0,03Sekunden pro Bild
-    // 1000*1000*10/30  = 333.333  100-Nanosekundeneinheiten pro Bild
-    // 33.333.333Nanosekunden pro Bild = 0,03 Sekunden pro Bild 
-}
-/// <summary>
-/// Return the Duration of one Frame in Milliseconds;
-/// </summary>
-/// <returns>FrameDuration in Milliseconds</returns>
-LONGLONG ClsSinkWriter::GetVideoFrameDuration()
-{
-    return m_lDurationVid / 10000;
+    HRESULT hr = NULL;
+
+    WaitForSingleObject(m_hThreadReadAudioHWBuffer, INFINITE);
+    CoreAudio().FinishStream();
+    m_bFinished = true;
+    //m_pSinkWriter->Flush(m_dwStreamIndexVidOut);
+    //m_pSinkWriter->Flush(m_dwStreamIndexAudOut);
+    HR_RETURN_ON_ERR(hr, m_pSinkWriter->Finalize());
+    SafeRelease(m_pBuffer.GetAddressOf());
+    SafeRelease(m_pSinkWriter.GetAddressOf());
+
+    CloseHandle(m_hThreadReadAudioHWBuffer);
+    CloseHandle(m_myDataForAudioThread.hEventReadAudioHWBuffer);
+
+    return hr;
 }//END-FUNC
 /// <summary>
 /// Metdaten für IN- und OutputFile: Breite, Höhe, Bitrate, Format etc.
@@ -154,22 +140,22 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     ComPtr<IMFMediaType> pMediaTypeAudioIn;
 
     IMFAttributes* pAttribute;                          // additionally Attributes for Creatingprocess of the SinkWriter
-   
-    CoreAudio.PlaySilence();
+
+    CoreAudio().PlaySilence();
 
     MFCreateAttributes(&pAttribute, 2);
     // Disable the DataRateLimit by blocking Thread
     HR_RETURN_ON_ERR(hr, pAttribute->SetUINT32(MF_SINK_WRITER_DISABLE_THROTTLING, true));
     // Enable Hardware Acceleration
     HR_RETURN_ON_ERR(hr, pAttribute->SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, true));
-   
+
     HR_RETURN_ON_ERR(hr, MFCreateSinkWriterFromURL(     // Erstellt Objekt aus IF per Polymorphism
         m_wstrFilename,                                 // Entweder Daten als File speichern
         NULL,                                           // Oder Daten im IMFByteStream speichern
         pAttribute,                                     // IMFAttributes, falls Decoder verwendet werden sollen etc
         &m_pSinkWriter                                  // Pointer des IF das nun auf erstelltes Objekt zeigt
     ));
-    
+
     SafeRelease(&pAttribute);
     // OUTPUT VIDEO
     HR_RETURN_ON_ERR(hr, MFCreateMediaType(&pMediaTypeVideoOut)); // erstellt ein Obj was ein MedienTyp repräsentiert, Zugriff per IF-Pointer
@@ -212,7 +198,7 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_FRAME_RATE, m_uiFPS, 1));
     HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_PIXEL_ASPECT_RATIO, 1, 1));
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->SetInputMediaType(m_dwStreamIndexVidOut, pMediaTypeVideoIn.Get(), NULL));
-    
+
     if (m_bIsAudio)
     {
         // INPUT Audio
@@ -232,6 +218,89 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     pMediaTypeAudioIn.Reset();
     return hr;
 }//END-FUNC
+/*************************************************************************************************
+**************************************VIDEO-METHODES**********************************************
+*************************************************************************************************/
+/// <summary>
+/// Set the BitRate of the VideoFile for the Sinkwriter
+/// </summary>
+/// <param name="uiBitRate"></param>
+void ClsSinkWriter::SetBitRate(UINT32 uiBitRate)
+{
+    m_uiBitRate = uiBitRate;
+}//END-FUNC
+/// <summary>
+/// Sets the Bitreading method: Standard or Invert
+/// </summary>
+/// <param name="myBitReading"></param>
+void ClsSinkWriter::SetBitReading(PicDataBitReading myBitReading)
+{
+    m_myBitReading = myBitReading;
+}//END-FUNC
+/// <summary>
+/// Set the Name of the VideoFile for the Sinkwriter (char* to WideChar[256])
+/// </summary>
+/// <param name="strFileName"></param>
+void ClsSinkWriter::SetFileName(const char* strFileName)
+{
+    // const char* to wchar
+    size_t uiWritten;
+    mbstowcs_s(&uiWritten, m_wstrFilename, strlen(strFileName) + 1, strFileName, strlen(strFileName));
+}//END-FUNC
+/// <summary>
+/// Set the FPS of the VideoFile for the Sinkwriter
+/// </summary>
+/// <param name="uiFPS">FPS</param>
+void ClsSinkWriter::SetFPS(UINT32 uiFPS)
+{
+    m_uiFPS = uiFPS;
+    CalcDurationVid();
+}//END-FUNC
+/// <summary>
+/// Sets the Input and/or Output Format.
+/// When Parameter is NULL, nothing will change
+/// </summary>
+/// <param name="MyInputFormat">SinkWriter InputFormat</param>
+/// <param name="MyOutputFormat">SinkWriter OutputFormat</param>
+void ClsSinkWriter::SetFormats(GUID MyInputFormat, GUID MyOutputFormat)
+{
+    m_myInputFormat = MyInputFormat;
+    m_myOutputFormat = MyOutputFormat;
+}//END-FUNC
+/// <summary>
+/// Set the FrameDataPointer. Includes Information about the FrameFormat.
+/// </summary>
+/// <param name="ppFrameData">Adress of the Pointer of the FrameDataStructure</param>
+void ClsSinkWriter::SetFrameData(FrameData** ppFrameData)
+{
+    m_pFrameData = *ppFrameData;
+    m_uiBitRate = m_pFrameData->uiHeightDest * m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
+    m_dwDataRow = m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
+}//END-FUNC
+/*************************************/
+/// <summary>
+/// Return the Duration of one Frame in Milliseconds;
+/// </summary>
+/// <returns>FrameDuration in Milliseconds</returns>
+LONGLONG ClsSinkWriter::GetVideoFrameDuration()
+{
+    return m_lDurationVid / 10000;
+}//END-FUNC
+/// <summary>
+/// Calculates the Duration of a VideoFrame
+/// </summary>
+void ClsSinkWriter::CalcDurationVid()
+{
+    m_lDurationVid = 1000 * 1000 * 10 / m_uiFPS;
+    //UINT64 b;
+    //MFFrameRateToAverageTimePerFrame(m_uiFPS, 1, &b);
+    //m_lDurationVid = b;
+    // Angabe in  Dauer in 100NanosekundenEinheiten
+    // Wieviele 100-NanosekundenEinheiten ein Bild angezeigt werden soll:
+    // 30FPS: 1/30 = 0,03Sekunden pro Bild
+    // 1000*1000*10/30  = 333.333  100-Nanosekundeneinheiten pro Bild
+    // 33.333.333Nanosekunden pro Bild = 0,03 Sekunden pro Bild 
+}
 /// <summary>
 /// Flips the Frame.
 /// BMP-Data have to be readed from down to top.
@@ -312,63 +381,55 @@ HRESULT ClsSinkWriter::WriteVideoDataSample(
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->WriteSample(m_dwStreamIndexVidOut, m_pSample.Get()));
     return hr;
 }//END-FUNC
+/*************************************************************************************************
+**************************************AUDIO-METHODES**********************************************
+*************************************************************************************************/
 /// <summary>
-/// Enables that the Sinkwriter can accept Data
+/// Enables or disables Audio
 /// </summary>
-/// <returns>HRESULT</returns>
-HRESULT ClsSinkWriter::StartRecording()
+/// <param name="bAudio"></param>
+void ClsSinkWriter::SetAudio(BOOL bAudio)
+{
+    m_bIsAudio = bAudio;
+}//END-FUNC
+/// <summary>
+/// Starts a seperate Thread for Listening and capturing the HardwareBuffer in Buffer-VectorArray
+/// </summary>
+HRESULT ClsSinkWriter::StartReadAudioHWBufferThread()
 {
     HRESULT hr = NULL;
-    UINT& uiPixelDataSize = m_pFrameData->uiPixelDataSize;
-    // Tell the sink writer to start accepting data.
-    HR_RETURN_ON_ERR(hr, m_pSinkWriter->BeginWriting());
-    // Create a new memory buffer.
-    HR_RETURN_ON_ERR(hr, MFCreateMemoryBuffer(uiPixelDataSize, &m_pBuffer));
-    // Set the data length of the buffer.
-    HR_RETURN_ON_ERR(hr, m_pBuffer->SetCurrentLength(uiPixelDataSize));
-
+    DWORD dwThreadID;
+    m_hThreadReadAudioHWBuffer = CreateThread(
+        NULL,
+        0,
+        AudioHardwareBufferThread,
+        &m_myDataForAudioThread,
+        0,
+        &dwThreadID);
+    if (NULL == m_hThreadReadAudioHWBuffer)
+    {
+        printf("CreateThread failed: last error is %u\n", GetLastError());
+        CloseHandle(m_hThreadReadAudioHWBuffer);
+        return E_FAIL;
+    }//END-IF
     return hr;
 }//END-FUNC
 /// <summary>
-/// Copying the Frame into the Sample.
-/// Video will be builded Sample by Sample.
+/// Sets the Functionspointer m_pReadAudioBuffer with the Function of ClsCoreAudio::ReadBuffer(...)
 /// </summary>
-/// <returns>HRESULT</returns>
-HRESULT ClsSinkWriter::LoopRecording()
+/// <param name="pReadAudioBuffer">Adress of the Function for Reading the Buffer</param>
+void ClsSinkWriter::SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*, UINT*))
 {
-    HRESULT hr = NULL;
-    unsigned char* pData = m_pFrameData->pData;
-    if (m_bFinished)
-        return S_OK;
-
-    WaitForReadAudioHWBuffer();
-    HR_RETURN_ON_ERR(hr, WriteAudioDataSample());
-    HR_RETURN_ON_ERR(hr, WriteVideoDataSample(pData));
-    m_lSampleTimeVid += m_lDurationVid; // Zeit pro Frame in 100NanoSekundenEinheiten
-
-    return hr;
+    m_pReadAudioBuffer = pReadAudioBuffer;
 }//END-FUNC
 /// <summary>
-/// Finish the OutputVideoFile
+/// Wait Event for the HardwareBufferThread
+/// Waits until its finished
 /// </summary>
-/// <returns>HRESULT</returns>
-HRESULT ClsSinkWriter::StopRecording()
+void ClsSinkWriter::WaitForReadAudioHWBuffer()
 {
-    HRESULT hr = NULL;
-
-    WaitForSingleObject(m_hThreadReadAudioHWBuffer, INFINITE);
-    CoreAudio.FinishStream();
-    m_bFinished = true;
-    //m_pSinkWriter->Flush(m_dwStreamIndexVidOut);
-    //m_pSinkWriter->Flush(m_dwStreamIndexAudOut);
-    HR_RETURN_ON_ERR(hr, m_pSinkWriter->Finalize());
-    SafeRelease(m_pBuffer.GetAddressOf());
-    SafeRelease(m_pSinkWriter.GetAddressOf());
-
-    CloseHandle(m_hThreadReadAudioHWBuffer);
-    CloseHandle(m_myDataForAudioThread.hEventReadAudioHWBuffer);
-
-    return hr;
+    WaitForSingleObject(m_myDataForAudioThread.hEventReadAudioHWBuffer, INFINITE);
+    ResetEvent(m_myDataForAudioThread.hEventReadAudioHWBuffer);
 }//END-FUNC
 /// <summary>
 /// Berechnet die Zeit in 100er NanoSekundenEinheiten für n AudioFrames.
@@ -387,19 +448,19 @@ HRESULT ClsSinkWriter::WriteAudioDataSample()
     ComPtr <IMFSample> pAudioSample;
     ComPtr <IMFMediaBuffer> pAudioBuffer;
     BYTE* pData = NULL;                                    // BYTE-Buffer der an IMF-Buffer gebunden wird
-   
+
     m_lDurationAud = m_lDurationVid;
-    
+
     HR_RETURN_ON_ERR(hr, MFCreateMemoryBuffer((DWORD)m_uiAudioBytes, &pAudioBuffer));
     // Bind Normal Buffer to the SinkWriterBuffer
     HR_RETURN_ON_ERR(hr, pAudioBuffer->Lock(&pData, NULL, NULL));
     // Reset Normal Buffer
 
-    
+
     memset(pData, 0, m_uiAudioBytes);
     // Write Data into the normal Buffer
     memcpy_s(pData, m_uiAudioBytes, m_pAudioData, m_uiAudioBytes);
-    
+
     // SinkWriterBuffer has now the Data of the normal Buffer
     HR_RETURN_ON_ERR(hr, pAudioBuffer->Unlock());
     free(m_pAudioData);
@@ -412,40 +473,8 @@ HRESULT ClsSinkWriter::WriteAudioDataSample()
     m_lSampleTimeAud = m_lDurationAud + m_lSampleTimeAud;
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->WriteSample(m_dwStreamIndexAudOut, pAudioSample.Get()));
 
-    return hr; 
-}//END-FUNC
-
-/// <summary>
-/// Starts a seperate Thread for Listening and capturing the HardwareBuffer in Buffer-VectorArray
-/// </summary>
-HRESULT ClsSinkWriter::StartReadAudioHWBufferThread()
-{
-    HRESULT hr = NULL;
-    DWORD dwThreadID;
-    m_hThreadReadAudioHWBuffer = CreateThread(
-        NULL,
-        0,
-        AudioHardwareBufferThread,
-        &m_myDataForAudioThread,
-        0,
-        &dwThreadID);
-    if(NULL == m_hThreadReadAudioHWBuffer)
-    {
-        printf("CreateThread failed: last error is %u\n", GetLastError());
-        CloseHandle(m_hThreadReadAudioHWBuffer);
-        return E_FAIL;
-    }//END-IF
     return hr;
 }//END-FUNC
-/// <summary>
-/// Wait Event for the HardwareBufferThread
-/// Waits until its finished
-/// </summary>
-void ClsSinkWriter::WaitForReadAudioHWBuffer()
-{
-    WaitForSingleObject(m_myDataForAudioThread.hEventReadAudioHWBuffer, INFINITE);
-    ResetEvent(m_myDataForAudioThread.hEventReadAudioHWBuffer);
-}
 /// <summary>
 /// - Static Function, called by the starting Thread m_hThreadReadAudioHWBuffer
 /// - Calls ClsCorAudio::ReadBuffer(...)
@@ -460,15 +489,22 @@ DWORD WINAPI ClsSinkWriter::AudioHardwareBufferThread(LPVOID pParm) {
     (*pDataForAudioThread->pReadAudioBuffer)(pDataForAudioThread->pAudioData, pDataForAudioThread->uiAudioBytes, pDataForAudioThread->uiFPS);
     SetEvent(pDataForAudioThread->hEventReadAudioHWBuffer);
     return 0;
-}
+}//END-FUNC
 /// <summary>
-/// Destructor
-/// Reset the Smartpointer
-/// Shutdown MediaFoundation
+/// returns the whole CoreAudioObject
+/// CalledBy: Constructor, StopReacording(), PrepareInputOutput()
 /// </summary>
-ClsSinkWriter::~ClsSinkWriter()
+/// <returns>CoreAudioObject</returns>
+ClsCoreAudio& ClsSinkWriter::CoreAudio()
 {
-    m_pSinkWriter.Reset();
-
-    MFShutdown();
+    return m_myClsCoreAudio;
+}//END-FUNC
+/// <summary>
+/// Used by CoreAudio for setting the WaveFormat
+/// CalledBy: CoreAudio().InitAudioClient(WaveFormat()) in the Constructor
+/// </summary>
+/// <returns>a set WaveFormat</returns>
+WAVEFORMATEX** ClsSinkWriter::WaveFormat() 
+{ 
+    return &m_pWaveFormat; 
 }//END-FUNC

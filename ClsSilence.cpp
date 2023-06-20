@@ -1,61 +1,6 @@
 #include "ClsSilence.h"
 
 /// <summary>
-/// Generate a Silence sound or a "pieep" sound
-/// CalledBy: BlankAudioPlayback(..)
-/// </summary>
-/// <param name="bufferFrameCount">Number of Frames</param>
-/// <param name="pData">Buffer of the Frames</param>
-/// <param name="pwfx">WaveFormat</param>
-/// <param name="outFlags">returned Flags</param>
-/// <returns>HRESULT</returns>
-HRESULT ClsSilence::LoadAudioBuffer(UINT32 bufferFrameCount, BYTE* pData, WAVEFORMATEX* pWaveFormat, DWORD* dwFlags)
-{
-    double dFrequency = 1700;		// 1.7 kHz
-    double dNumChannels = 2;
-    double dPhase = 0.0;
-    double dSampleRate = 48000;
-    double dPhaseInc = 0;
-    float* pOutput = NULL;
-
-    if (pWaveFormat->wFormatTag != WAVE_FORMAT_EXTENSIBLE)
-    {
-        // AudioEngine kann nicht geöffnet werden, spielt keine Silence hab
-        *dwFlags = AUDCLNT_BUFFERFLAGS_SILENT;
-        return E_FAIL;
-    }
-
-    WAVEFORMATEXTENSIBLE* pWaveFormatWide = (WAVEFORMATEXTENSIBLE*)pWaveFormat;
-    if (pWaveFormatWide->SubFormat != KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
-    {
-        // AudioEngine kann nicht geöffnet werden, spielt keine Silence hab
-        *dwFlags = AUDCLNT_BUFFERFLAGS_SILENT;
-        return E_FAIL;
-    }
-    // ok now we know we can fill it with float data!
-    pOutput = (float*)pData;
-
-    // Compute the phase increment for the current frequency, the piep
-    dPhaseInc = 2 * M_PI * dFrequency / dSampleRate;
-
-    // Generate the samples
-    for (UINT32 i = 0; i < bufferFrameCount; i++)
-    {
-        // Each Frame consists of two Floatvalues (Stereo)
-        // All Frames will have the same Value, the same "piep"
-        float x = float(0.1 * sin(dPhase));
-        for (int ch = 0; ch < dNumChannels; ch++) // Stereo
-            *pOutput++ = x;     
-        dPhase += dPhaseInc;
-    }
-
-    // Bring phase back into range [0, 2pi]
-    dPhase = fmod(dPhase, 2 * M_PI);
-
-    return S_OK;
-}//END-FUNC
-
-/// <summary>
 /// Creates AudioEndpointDevice
 /// Creates an AudioClient and AudioRenderClient for the Stream
 /// Calls LoadAudioBuffer that generates a SilenceSound
@@ -76,12 +21,11 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
     REFERENCE_TIME lDurationHardwareBuffer = REFTIMES_PER_MS;	// 10.000 100erNsUnits = 1.000.000 ns = 1ms
     BYTE* pData;                                                // Pointer to an intern Pointer to the HardwareBuffer
     WAVEFORMATEX* pWaveFormat = NULL;
-    ComPtr<IMMDeviceEnumerator> pEnumerator = NULL;
-    ComPtr<IMMDevice> pDevice = NULL;
+
     ComPtr<IAudioClient> pAudioClient = NULL;
+    ComPtr<IMMDevice> pDevice = NULL;
+    ComPtr<IMMDeviceEnumerator> pEnumerator = NULL;
     ComPtr<IAudioRenderClient> pRenderClient = NULL;
-
-
 
     Events* pStruMyEvents;
     pStruMyEvents = (Events*)lParm;                             // Struct of the MainThread
@@ -181,4 +125,59 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
     Sleep((DWORD)(lDuration / 10 / 2));
     HR_RETURN_ON_ERR(hr, pAudioClient->Stop());
     CoTaskMemFree(pWaveFormat);
+}//END-FUNC
+
+/// <summary>
+/// Generate a Silence sound or a "pieep" sound
+/// CalledBy: BlankAudioPlayback(..)
+/// </summary>
+/// <param name="bufferFrameCount">Number of Frames</param>
+/// <param name="pData">Buffer of the Frames</param>
+/// <param name="pwfx">WaveFormat</param>
+/// <param name="outFlags">returned Flags</param>
+/// <returns>HRESULT</returns>
+HRESULT ClsSilence::LoadAudioBuffer(UINT32 bufferFrameCount, BYTE* pData, WAVEFORMATEX* pWaveFormat, DWORD* dwFlags)
+{
+    double dFrequency = 1700;		// 1.7 kHz
+    double dNumChannels = 2;
+    double dPhase = 0.0;
+    double dPhaseInc = 0;
+    double dSampleRate = 48000;
+    float* pOutput = NULL;
+
+    if (pWaveFormat->wFormatTag != WAVE_FORMAT_EXTENSIBLE)
+    {
+        // AudioEngine kann nicht geöffnet werden, spielt keine Silence hab
+        *dwFlags = AUDCLNT_BUFFERFLAGS_SILENT;
+        return E_FAIL;
+    }//END-IF
+
+    WAVEFORMATEXTENSIBLE* pWaveFormatWide = (WAVEFORMATEXTENSIBLE*)pWaveFormat;
+    if (pWaveFormatWide->SubFormat != KSDATAFORMAT_SUBTYPE_IEEE_FLOAT)
+    {
+        // AudioEngine kann nicht geöffnet werden, spielt keine Silence hab
+        *dwFlags = AUDCLNT_BUFFERFLAGS_SILENT;
+        return E_FAIL;
+    }//END-IF
+    // ok now we know we can fill it with float data!
+    pOutput = (float*)pData;
+
+    // Compute the phase increment for the current frequency, the piep
+    dPhaseInc = 2 * M_PI * dFrequency / dSampleRate;
+
+    // Generate the samples
+    for (UINT32 i = 0; i < bufferFrameCount; i++)
+    {
+        // Each Frame consists of two Floatvalues (Stereo)
+        // All Frames will have the same Value, the same "piep"
+        float x = float(0.1 * sin(dPhase));
+        for (int ch = 0; ch < dNumChannels; ch++) // Stereo
+            *pOutput++ = x;
+        dPhase += dPhaseInc;
+    }//END-FOR
+
+    // Bring phase back into range [0, 2pi]
+    dPhase = fmod(dPhase, 2 * M_PI);
+
+    return S_OK;
 }//END-FUNC

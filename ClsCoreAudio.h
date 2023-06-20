@@ -7,8 +7,8 @@
 /// </summary>
 struct ReBuffer
 {
-    vector<BYTE> m_pBuffer;
     size_t m_uiBufferSize;
+    vector<BYTE> m_pBuffer;
     ReBuffer()
     {
         m_uiBufferSize = 0;
@@ -68,34 +68,35 @@ class ClsCoreAudio
 public:
     friend class ClsSinkWriter;
 private:
-    HANDLE m_hEventPlayingSilence;
-    HANDLE m_hThreadPlaySilence;
     static UINT32 m_uiNumFrames;
-    UINT32 m_uiNumFramesHWBuffer;
     static UINT32 m_uiPacketLength;
     static REFERENCE_TIME m_lCurDurationHardwareBuffer;
-    REFERENCE_TIME m_lDurationHardwareBuffer;
-    Events m_myEvents;
+    static ReBuffer m_myRebuffer;
     static BYTE* m_pData;
-    
+    static WAVEFORMATEX* m_pWaveFormat;
+    static ComPtr <IAudioCaptureClient> m_pCaptureClient;
+
+    HANDLE m_hEventPlayingSilence;
+    HANDLE m_hThreadPlaySilence;
+    UINT32 m_uiNumFramesHWBuffer;
+    REFERENCE_TIME m_lDurationHardwareBuffer;
+    Events m_myEvents;    
     ComPtr <IMMDevice> m_pDevice;
     ComPtr <IMMDeviceEnumerator> m_pEnumerator;
     ComPtr <IAudioClient> m_pAudioClient;
-    static ComPtr <IAudioCaptureClient> m_pCaptureClient;
-    static WAVEFORMATEX* m_pWaveFormat;
+    
 public:
     ClsCoreAudio();
     ~ClsCoreAudio();
 private:
-    HRESULT InitEngine();
     void CalcCurrentDurationOfBuffer();
-    static ReBuffer m_myRebuffer;
-    static REFERENCE_TIME Ns100UnitsInMs(REFERENCE_TIME lValue);
+    HRESULT InitAudioClient(WAVEFORMATEX** ppWaveFormat);
+    HRESULT InitEngine();
+    HRESULT FinishStream();
+    HRESULT PlaySilence();
+    
+    static HRESULT ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFPS);
     static HRESULT ReleaseBuffer();
     static DWORD WINAPI StartSilence(LPVOID pParm);
-    HRESULT InitAudioClient(WAVEFORMATEX** ppWaveFormat);
-    HRESULT PlaySilence();
-    static HRESULT ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFPS);
-    HRESULT FinishStream();
-    
+    static REFERENCE_TIME Ns100UnitsInMs(REFERENCE_TIME lValue); 
 };

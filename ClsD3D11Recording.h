@@ -4,25 +4,12 @@
 #include "ClsWinGDI.h"
 #include "ClsD3D11.h"
 #include "ClsFpsSync.h"
-//#include "ClsCoreAudio.h"
 
 /// <summary>
 /// Enthält Metadaten für das Fenster: Höhe, Breite, Bpp, Handle, Titelname
 /// Enthält Filename für BMP-Datei (für Screenshot)
 /// Bekommt Daten des Fensterinhalts über m_pData
 /// </summary>
-
-// Forward Declaration in other namespaces, needed for friend class definition
-
-namespace D3D
-{
-	//class ClsD3D11;
-	//class ClsD2D1;
-}
-namespace GDI
-{
-	//class ClsGDI;
-}
 
 /// <summary>
 /// Allows the User to discripe the Superclass
@@ -47,6 +34,7 @@ public:
 	{
 		bIsAudio = false;
 		strWndTitle = NULL;
+		strFileName = NULL;
 		uiFPS = DEFFPS;
 		uiHeightDest = DEFHEIGHT;
 		uiMonitorID = MAINMONITOR;
@@ -105,14 +93,8 @@ public:
 class ClsD3D11Recording
 {
 public:
-	
-public:
 	friend class ClsWnd;
-	//friend class D3D::ClsD2D1;
-	//friend class GDI::ClsGDI;
-	//friend class ClsSinkWriter;
-	//friend class ClsScreenshot;
-	static UINT m_uiMaxMonitors;
+	
 private:
 	HWND m_hWnd;
 	int m_iXPos;
@@ -125,15 +107,32 @@ private:
 	CopyMethod m_myCpyMethod;
 	PicDataBitReading m_myBitReading;
 	FrameData* m_pFrameData;
-
 	std::vector<MonitorInfo*>   m_vMonitors;
-	//ClsCoreAudio CoreAudio;
-	D3D::ClsD3D11 D3D11;
-	ClsSinkWriter SinkWriter;
-	GDI::ClsWinGDI WinGDI;
-	ClsFPSSync SyncFPS;
-	
-public:
+
+	static UINT m_uiMaxMonitors;
+private:
+	D3D::ClsD3D11 m_myClsD3D11;
+	ClsSinkWriter m_myClsSinkWriter;
+	GDI::ClsWinGDI m_myClsWinGDI;
+	ClsFPSSync m_myClsSyncFPS;
+private:
+	D3D::ClsD3D11& D3D11()
+	{
+		return m_myClsD3D11;
+	}
+	ClsSinkWriter& SinkWriter()
+	{
+		return m_myClsSinkWriter;
+	}
+	GDI::ClsWinGDI& WinGDI()
+	{
+		return m_myClsWinGDI;
+	}
+	ClsFPSSync& SyncFPS()
+	{
+		return m_myClsSyncFPS;
+	}
+private:
 	static BOOL CALLBACK MonitorEnum(HMONITOR hMonitor, HDC hdc, LPRECT lprcMonitor, LPARAM pData)
 	{
 		m_uiMaxMonitors++;
@@ -154,6 +153,7 @@ public:
 
 		return TRUE;
 	}
+public:
 	ClsD3D11Recording(VideoDescriptor* pVidDesc)
 	{
 		m_hWnd = NULL;
@@ -179,65 +179,63 @@ public:
 		SetWindowRect();
 		SetWindowPosition();
 
-		SinkWriter.SetFrameData(&m_pFrameData);
-		SinkWriter.SetBitReading(PicDataBitReading::Standard);// m_myBitReading);
+		SinkWriter().SetFrameData(&m_pFrameData);
+		SinkWriter().SetBitReading(PicDataBitReading::Standard);// m_myBitReading);
 		
-		WinGDI.SetFrameData(&m_pFrameData);
-		WinGDI.SetSrcWndTitle(pVidDesc->strWndTitle);
-		WinGDI.SetCpyMethod(m_myCpyMethod);
-		WinGDI.ScreenShot.SetFrameData(&m_pFrameData);
+		WinGDI().SetFrameData(&m_pFrameData);
+		WinGDI().SetSrcWndTitle(pVidDesc->strWndTitle);
+		WinGDI().SetCpyMethod(m_myCpyMethod);
 
-		D3D11.SetFrameData(&m_pFrameData);
-		D3D11.SetCpyMethod(m_myCpyMethod);
-		D3D11.SetPickedMonitor(m_uiPickedMonitor);
+		D3D11().SetFrameData(&m_pFrameData);
+		D3D11().SetCpyMethod(m_myCpyMethod);
+		D3D11().SetPickedMonitor(m_uiPickedMonitor);
 		
-		SinkWriter.SetFPS(pVidDesc->uiFPS);
-		SinkWriter.SetFormats(pVidDesc->myInputFormat, pVidDesc->myOutputFormat);
-		SinkWriter.SetBitReading(pVidDesc->myBitReading);
-		SinkWriter.SetFileName(pVidDesc->strFileName);
-		SinkWriter.SetAudio(pVidDesc->bIsAudio);
+		SinkWriter().SetFPS(pVidDesc->uiFPS);
+		SinkWriter().SetFormats(pVidDesc->myInputFormat, pVidDesc->myOutputFormat);
+		SinkWriter().SetBitReading(pVidDesc->myBitReading);
+		SinkWriter().SetFileName(pVidDesc->strFileName);
+		SinkWriter().SetAudio(pVidDesc->bIsAudio);
 
-		SyncFPS.SetFrameDuaration(SinkWriter.GetVideoFrameDuration());
+		SyncFPS().SetFrameDuaration(SinkWriter().GetVideoFrameDuration());
 	}
 	void Init3DWindow()
 	{
-		D3D11.CreateDevice();
-		D3D11.CreateSwapChain();
-		D3D11.CreateSwapChainBuffer();
-		D3D11.CreateBuffers();
-		D3D11.CreateAndSetSampler();
-		D3D11.CreateD3D11Texture();
-		D3D11.CreateShaderView();
-		D3D11.CreateAndSetShader();
-		D3D11.CreateInputLayout();
-		D3D11.SetClientRect(GetMyClientRect());
-		D3D11.PreparePresentation();
-		WinGDI.FindSetWindow();
+		D3D11().CreateDevice();
+		D3D11().CreateSwapChain();
+		D3D11().CreateSwapChainBuffer();
+		D3D11().CreateBuffers();
+		D3D11().CreateAndSetSampler();
+		D3D11().CreateD3D11Texture();
+		D3D11().CreateShaderView();
+		D3D11().CreateAndSetShader();
+		D3D11().CreateInputLayout();
+		D3D11().SetClientRect(GetMyClientRect());
+		D3D11().PreparePresentation();
+		WinGDI().FindSetWindow();
 	}
 	void PrepareRecording()
 	{
-		SinkWriter.PrepareInputOutput();
-		SinkWriter.StartRecording();
-		SyncFPS.Start();
+		SinkWriter().PrepareInputOutput();
+		SinkWriter().StartRecording();
+		SyncFPS().Start();
 	}
 	void Recording()
 	{
-		++SyncFPS;
+		++SyncFPS();
 		if (!IsDesktopDupl())
-			WinGDI.GetBitBltDataFromWindow();
+			WinGDI().GetBitBltDataFromWindow();
 
-		SinkWriter.StartReadAudioHWBufferThread();
-		D3D11.BitBltDataToRT();
-		//D3D11.SetConstantBuffer();
-		//MyClsDataContainer.WinGDI.TakeScreenshot();
-		SinkWriter.LoopRecording();
-		D3D11.PresentTexture();
-		SyncFPS.SleepUntilNextFrame();
+		SinkWriter().StartReadAudioHWBufferThread();
+		D3D11().BitBltDataToRT();
+		//D3D11().SetConstantBuffer();
+		WinGDI().TakeScreenshot();
+		SinkWriter().LoopRecording();
+		D3D11().PresentTexture();
+		SyncFPS().SleepUntilNextFrame();
 	}
 	void StopRecording()
 	{
-		//CoreAudio.FinishStream();
-		SinkWriter.StopRecording();
+		SinkWriter().StopRecording();
 	}
 	~ClsD3D11Recording()
 	{
@@ -278,12 +276,8 @@ private:
 	void SetHWND(HWND hWnd)
 	{
 		m_hWnd = hWnd;
-		D3D11.SetWnd(hWnd);
+		D3D11().SetWnd(hWnd);
 	}
-	/*CopyMethod& GetCpyMethod()
-	{
-		return m_myCpyMethod;
-	}*/
 	BOOL IsDesktopDupl()
 	{
 		if (m_myCpyMethod == CopyMethod::DesktopDupl)

@@ -21,10 +21,11 @@ namespace GDI
 
 	public:
 		ClsScreenshot();
-		void SetFrameData(FrameData** pFrameData);
 	private:
-		HRESULT BitBltToFile(HDC hMemDC, HBITMAP hBitmap, UINT uiWindowFlag);
+		void CreateBmpFileHeader();
 		void GenerateBitBltData();
-		void  CreateBmpFileHeader();
+		void SetFrameData(FrameData** pFrameData);
+		HRESULT BitBltToFile(HDC hMemDC, HBITMAP hBitmap, UINT uiWindowFlag);
+		
 	};
 }
