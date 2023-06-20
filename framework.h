@@ -23,7 +23,6 @@ using namespace std;
 enum class CopyMethod { Mapping, D2D1Surface, SubResource, DesktopDupl };
 enum class PicDataBitReading { Invert, Standard };
 
-class ClsDataContainer;
 
 /// <summary>
 /// Container for transfering Data into Subclasses of the Superclass
@@ -175,4 +174,3 @@ void SafeRelease(T** ppT)
 using namespace Microsoft::WRL;
 using namespace ABI::Windows::Foundation;
 using Microsoft::WRL::ComPtr;
-

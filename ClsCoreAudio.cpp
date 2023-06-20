@@ -7,6 +7,11 @@ BYTE* ClsCoreAudio::m_pData = NULL;
 ComPtr<IAudioCaptureClient> ClsCoreAudio::m_pCaptureClient = 0;
 WAVEFORMATEX* ClsCoreAudio::m_pWaveFormat = NULL;
 ReBuffer ClsCoreAudio::m_myRebuffer;
+/*********ID for COM Interfaces*******/
+const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
+const IID IID_IAudioClient = __uuidof(IAudioClient);
+const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
+const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
 /*************************************/
 /// <summary>
 /// Constructor

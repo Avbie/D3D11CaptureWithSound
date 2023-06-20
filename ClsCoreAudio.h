@@ -5,6 +5,7 @@
 /// It can collect several Pakets of the HardwareBuffer.
 /// Its needed because of we need a specific size per VideoFrame.
 /// </summary>
+
 struct ReBuffer
 {
     size_t m_uiBufferSize;

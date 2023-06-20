@@ -36,6 +36,8 @@ ClsD3D11Recording::ClsD3D11Recording(VideoDescriptor* pVidDesc)
 	SetWindowRect();
 	SetWindowPosition();
 
+	SinkWriter().SetAudio(pVidDesc->bIsAudio);
+	SinkWriter().PrepareAudio();
 	SinkWriter().SetFrameData(&m_pFrameData);
 	SinkWriter().SetBitReading(PicDataBitReading::Standard);// m_myBitReading);
 
@@ -51,7 +53,6 @@ ClsD3D11Recording::ClsD3D11Recording(VideoDescriptor* pVidDesc)
 	SinkWriter().SetFormats(pVidDesc->myInputFormat, pVidDesc->myOutputFormat);
 	SinkWriter().SetBitReading(pVidDesc->myBitReading);
 	SinkWriter().SetFileName(pVidDesc->strFileName);
-	SinkWriter().SetAudio(pVidDesc->bIsAudio);
 
 	SyncFPS().SetFrameDuaration(SinkWriter().GetVideoFrameDuration());
 }//END-CONS

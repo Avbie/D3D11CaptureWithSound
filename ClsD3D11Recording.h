@@ -151,7 +151,6 @@ private:
 	UINT GetXPos();
 	UINT GetYPos();
 	RECT GetMyClientRect();
-	
-
-
 };
+
+inline UINT ClsD3D11Recording::m_uiMaxMonitors = 0;

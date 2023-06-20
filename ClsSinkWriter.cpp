@@ -46,11 +46,6 @@ ClsSinkWriter::ClsSinkWriter()
     m_myDataForAudioThread.uiFPS = &m_uiFPS;
     // Pointer to Pointer (Functionpointer)
     m_myDataForAudioThread.pReadAudioBuffer = &m_pReadAudioBuffer;
-    if (m_bIsAudio)
-    {
-        SetReadAudioHWBufferCallback(ClsCoreAudio::ReadBuffer);
-        CoreAudio().InitAudioClient(WaveFormat());
-    }
 }//END-FUNC
 /// <summary>
 /// Destructor
@@ -393,6 +388,21 @@ HRESULT ClsSinkWriter::WriteVideoDataSample(
 /*************************************************************************************************
 **************************************AUDIO-METHODES**********************************************
 *************************************************************************************************/
+
+/// <summary>
+/// Preparing Audio Capture
+/// - Sets the ReadBuffer Function that is needed in the RecoringLoop ClsD3D11Recording::Recording()
+/// - Request the WaveFormat that the Hardwarebuffer will be use.
+/// CalledBy: Constructor ClsD3D11Recording::ClsD3D11Recording()
+/// </summary>
+void ClsSinkWriter::PrepareAudio()
+{
+    if (m_bIsAudio)
+    {
+        SetReadAudioHWBufferCallback(ClsCoreAudio::ReadBuffer);
+        CoreAudio().InitAudioClient(WaveFormat());
+    }
+}//END-FUNC
 /// <summary>
 /// Enables or disables Audio
 /// </summary>

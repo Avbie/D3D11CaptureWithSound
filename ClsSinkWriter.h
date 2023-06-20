@@ -75,6 +75,7 @@ private:
     HRESULT WriteVideoDataSample(unsigned char* pFrameBuffer);
     /*********Audio*******************/
 public:
+    void PrepareAudio();
     void SetAudio(BOOL bAudio);
     HRESULT StartReadAudioHWBufferThread();
 private:
