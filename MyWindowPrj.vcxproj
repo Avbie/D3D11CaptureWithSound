@@ -168,6 +168,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClsD3D11Recording.cpp" />
     <ClCompile Include="ClsWinGDI.cpp" />
     <ClCompile Include="ClsCoreAudio.cpp" />
     <ClCompile Include="ClsD2D1.cpp" />

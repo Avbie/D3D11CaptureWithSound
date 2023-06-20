@@ -46,9 +46,11 @@ ClsSinkWriter::ClsSinkWriter()
     m_myDataForAudioThread.uiFPS = &m_uiFPS;
     // Pointer to Pointer (Functionpointer)
     m_myDataForAudioThread.pReadAudioBuffer = &m_pReadAudioBuffer;
-
-    SetReadAudioHWBufferCallback(ClsCoreAudio::ReadBuffer);
-    CoreAudio().InitAudioClient(WaveFormat());
+    if (m_bIsAudio)
+    {
+        SetReadAudioHWBufferCallback(ClsCoreAudio::ReadBuffer);
+        CoreAudio().InitAudioClient(WaveFormat());
+    }
 }//END-FUNC
 /// <summary>
 /// Destructor
@@ -76,9 +78,11 @@ HRESULT ClsSinkWriter::LoopRecording()
     unsigned char* pData = m_pFrameData->pData;
     if (m_bFinished)
         return S_OK;
-
-    WaitForReadAudioHWBuffer();
-    HR_RETURN_ON_ERR(hr, WriteAudioDataSample());
+    if (m_bIsAudio)
+    {
+        WaitForReadAudioHWBuffer();
+        HR_RETURN_ON_ERR(hr, WriteAudioDataSample());
+    }
     HR_RETURN_ON_ERR(hr, WriteVideoDataSample(pData));
     m_lSampleTimeVid += m_lDurationVid; // Zeit pro Frame in 100NanoSekundenEinheiten
 
@@ -109,8 +113,11 @@ HRESULT ClsSinkWriter::StopRecording()
 {
     HRESULT hr = NULL;
 
-    WaitForSingleObject(m_hThreadReadAudioHWBuffer, INFINITE);
-    CoreAudio().FinishStream();
+    if (m_bIsAudio)
+    {
+        WaitForSingleObject(m_hThreadReadAudioHWBuffer, INFINITE);
+        CoreAudio().FinishStream();
+    }
     m_bFinished = true;
     //m_pSinkWriter->Flush(m_dwStreamIndexVidOut);
     //m_pSinkWriter->Flush(m_dwStreamIndexAudOut);
@@ -141,8 +148,10 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
 
     IMFAttributes* pAttribute;                          // additionally Attributes for Creatingprocess of the SinkWriter
 
-    CoreAudio().PlaySilence();
-
+    if (m_bIsAudio)
+    {
+        CoreAudio().PlaySilence();
+    }
     MFCreateAttributes(&pAttribute, 2);
     // Disable the DataRateLimit by blocking Thread
     HR_RETURN_ON_ERR(hr, pAttribute->SetUINT32(MF_SINK_WRITER_DISABLE_THROTTLING, true));

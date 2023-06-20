@@ -42,6 +42,16 @@ public:
 	unsigned char* pData;
 };
 
+template <class T>
+void SafeRelease(T** ppT)
+{
+	if (*ppT)
+	{
+		(*ppT)->Release();
+		*ppT = NULL;
+	}
+}
+
 // Defines for CoreAudio
 #define REFTIMES_PER_MS  (10000)
 #define M_PI (3.14159265358979323846)

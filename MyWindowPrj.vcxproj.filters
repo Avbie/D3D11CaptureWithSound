@@ -97,7 +97,7 @@
       <Filter>Headerdateien\D3D11</Filter>
     </ClInclude>
     <ClInclude Include="ClsWndHandle.h">
-      <Filter>Headerdateien</Filter>
+      <Filter>Headerdateien\WinGDI</Filter>
     </ClInclude>
     <ClInclude Include="ClsD3D11.h">
       <Filter>Headerdateien\D3D11</Filter>
@@ -166,6 +166,9 @@
     </ClCompile>
     <ClCompile Include="ClsWndHandle.cpp">
       <Filter>Quelldateien\WinGDI</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsD3D11Recording.cpp">
+      <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

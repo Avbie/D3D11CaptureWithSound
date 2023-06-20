@@ -207,7 +207,7 @@ namespace D3D
 		case CopyMethod::DesktopDupl:
 
 			TextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;		// wird an VertexShader-Stage gebunden
-			TextureDesc.Usage = D3D11_USAGE_DYNAMIC;				// Default: Read/Write when is not locked by GPU
+			TextureDesc.Usage = D3D11_USAGE_DYNAMIC;				// Dynamic: GPU: read; CPU write
 			TextureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;	// Write Access for the CPU
 			SubResData.pSysMem = (const void*)pData;				// Daten in Container speichern
 			SubResData.SysMemPitch = uiWidthDest * uiBpp;			// Eine Pixelreihe als Width*4: 1 Pixel = 4 Bytes
@@ -796,23 +796,18 @@ namespace D3D
 	HRESULT ClsD3D11::GetDesktopDuplByGPU()
 	{
 		HRESULT hr = NULL;
+		// AcquireNextFrame returns a CPU inaccessible IDXGIResource, so we need to make a copy.
 		HR_RETURN_ON_ERR(hr, m_pDeskDupl->AcquireNextFrame(
 			500,												// Framegültigkeit in ms. Muss noch beim nächsten Durchlauf verfügbar sein
 			&m_MyFrameInfo,										// MouseCurserInformationen 
 																// letzte Aktualisierung des DesktopFrames seitens DWM
 			&m_pDxgiDesktopResource));							// Container für ImgDaten
 		// LowLvl (Hardwarenah) zu HighLvl
-
 		HR_RETURN_ON_ERR(hr, m_pDxgiDesktopResource->QueryInterface(
 			IID_PPV_ARGS(&m_pD3dAcquiredDesktopImage)));
-
-
 		// Überschreibung meiner D3D11Texture mit DesktopD3D11Texture
 		m_pD3dContext->CopyResource(m_pD3D11Texture.Get(), m_pD3dAcquiredDesktopImage.Get());
-		//D3D11_TEXTURE2D_DESC myDesc;
-		//m_pD3dAcquiredDesktopImage->GetDesc(&myDesc);
 		HR_RETURN_ON_ERR(hr, DesktopDuplToRAM()); // für Sinkwriter
-		//m_pD3dContext->UpdateSubresource(m_pD3D11Texture.Get(), 0, &destRegion, pData, uiPitch, 0);
 		HR_RETURN_ON_ERR(hr, m_pDeskDupl->ReleaseFrame());				// Frame wieder freigeben, Abfrage beendet
 
 		return hr;

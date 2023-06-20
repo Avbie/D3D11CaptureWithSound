@@ -33,12 +33,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	strcpy_s(strWndTitle, "Editor");
 
 	VideoDescriptor myVideoDescriptor;
-
+	/*
+	* should be DesktopDupl, its really fast compared to all other Methods.
+	* All other Methods have to read the PicData per GDI.
+	* DesktopDupl can do around 60 FPS with sound and 120 FPS without sound.
+	* AudioHardwareBuffer slows down the process.
+	*/
 	myVideoDescriptor.strFileName = "Output.mp4";
-	myVideoDescriptor.bIsAudio = true;
+	myVideoDescriptor.bIsAudio = false;
 	myVideoDescriptor.strWndTitle = "Editor";
-	myVideoDescriptor.uiFPS = 60;
-	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
+	myVideoDescriptor.uiFPS = 25;
+	myVideoDescriptor.myCpyMethod = CopyMethod::D2D1Surface;
 	myVideoDescriptor.uiMonitorID = MAINMONITOR;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);

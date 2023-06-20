@@ -2,16 +2,9 @@
 #include "framework.h"
 #include "ClsCoreAudio.h"
 
-template <class T>
-void SafeRelease(T** ppT)
-{
-    if (*ppT)
-    {
-        (*ppT)->Release();
-        *ppT = NULL;
-    }
-}
-
+/// <summary>
+/// used for communication between ClsSinkWriter and ClsCoreAudio
+/// </summary>
 struct DataForAudioThread
 {
     BYTE** pAudioData;
