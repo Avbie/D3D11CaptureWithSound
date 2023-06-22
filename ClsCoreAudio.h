@@ -38,7 +38,7 @@ struct ReBuffer
     /// </summary>
     /// <param name="uiAFrameSize">Size of one Frame</param>
     /// <returns>Number of keeped AudioFrames</returns>
-    UINT CurrentAudioFrames(UINT uiAFrameSize)
+    UINT64 CurrentAudioFrames(UINT uiAFrameSize)
     {
         return m_uiBufferSize / uiAFrameSize;
     }//END-FUNC
@@ -71,7 +71,7 @@ public:
 private:
     static UINT32 m_uiNumFrames;
     static UINT32 m_uiPacketLength;
-    static REFERENCE_TIME m_lCurDurationHardwareBuffer;
+    static double m_dCurDurationHardwareBuffer;
     static ReBuffer m_myRebuffer;
     static BYTE* m_pData;
     static WAVEFORMATEX* m_pWaveFormat;
@@ -99,5 +99,5 @@ private:
     static HRESULT ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFPS);
     static HRESULT ReleaseBuffer();
     static DWORD WINAPI StartSilence(LPVOID pParm);
-    static REFERENCE_TIME Ns100UnitsInMs(REFERENCE_TIME lValue); 
+    static DWORD Ns100UnitsInMs(double lValue); 
 };

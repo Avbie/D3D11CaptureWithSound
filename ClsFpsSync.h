@@ -4,33 +4,23 @@
 using namespace std;
 using namespace std::chrono;
 
+/// <summary>
+/// Class for sync. the Frames.
+/// Here we set the Time for each loopPassage in the Mainloop.
+/// It have to be the same time for every loopPassage in the Mainloop for having a constantly FrameRate.
+/// </summary>
 class ClsFPSSync
 {
 private:
-    time_point<steady_clock> m_myNextFrame;
     LONGLONG m_lDuration;
-private:
-    void SetTimeForNextFrame()
-    {
-        m_myNextFrame = m_myNextFrame + std::chrono::milliseconds(m_lDuration);
-    }
+    time_point<steady_clock> m_myNextFrame;
 public:
-    void SetFrameDuaration(LONGLONG lDurInMilliSeconds)
-    {
-        m_lDuration = lDurInMilliSeconds;
-    }
-    void Start()
-    {
-        m_myNextFrame = steady_clock::now();
-    }
-
-    void SleepUntilNextFrame()
-    {
-        std::this_thread::sleep_until(m_myNextFrame);
-    }
-
-    void operator ++()
-    {
-        SetTimeForNextFrame();
-    }
+    ClsFPSSync();
+public:
+    void SetFrameDuaration(LONGLONG lDurInMilliSeconds);
+    void SleepUntilNextFrame();
+    void Start();
+    void operator ++();
+private:
+    void SetTimeForNextFrame();
 };

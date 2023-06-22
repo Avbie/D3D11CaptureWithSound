@@ -64,6 +64,9 @@
     <Filter Include="Quelldateien\Screenshot">
       <UniqueIdentifier>{fea2c932-282c-4bea-a796-a36de5e68550}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Quelldateien\FPSSync">
+      <UniqueIdentifier>{596b6147-90f6-462d-b384-d5305124949b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -117,14 +120,14 @@
     <ClInclude Include="ClsScreenshot.h">
       <Filter>Headerdateien\ScreenShot</Filter>
     </ClInclude>
-    <ClInclude Include="ClsFpsSync.h">
-      <Filter>Headerdateien\FPSSync</Filter>
-    </ClInclude>
     <ClInclude Include="ClsWinGDI.h">
       <Filter>Headerdateien\WinGDI</Filter>
     </ClInclude>
     <ClInclude Include="ClsD3D11Recording.h">
       <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsFPSSync.h">
+      <Filter>Headerdateien\FPSSync</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -169,6 +172,9 @@
     </ClCompile>
     <ClCompile Include="ClsD3D11Recording.cpp">
       <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsFPSSync.cpp">
+      <Filter>Quelldateien\FPSSync</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

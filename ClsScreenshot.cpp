@@ -32,12 +32,25 @@ namespace GDI
 			sizeof(BITMAPFILEHEADER)								// Größe FileHeader
 			+ sizeof(BITMAPINFOHEADER)								// Größe BmpHeader
 			+ (sizeof(RGBQUAD)										// ExtraBytes für Dateiende (Größe eines Pixels)
-				+ (uiWidthDest * uiHeightDest * uiBpp)				// Größe der Pixeldaten
+				+ (static_cast<UINT64>(uiWidthDest) * 
+					static_cast<UINT64>(uiHeightDest) * 
+					static_cast<UINT64>(uiBpp))						// Größe der Pixeldaten
 				);
 
 		m_hHeaderHandle = GlobalAlloc(GMEM_ZEROINIT, m_dwFileSize);	// Speicher entsprechend der Pixeldaten reservieren
+		
+		if (m_hHeaderHandle == NULL)
+		{
+			printf("Cant allocate memory for BMP-File Header %u\n", GetLastError());
+			return;
+		}//END-IF
+		
 		m_pFileData = (unsigned char*)GlobalLock(m_hHeaderHandle);	// Speicher für diese Anwendung locken und Adresse in Pointer übergeben
-
+		if (m_pFileData == NULL)
+		{
+			printf("Cant lock memory for BMP-File Header %u\n", GetLastError());
+			return;
+		}//END-IF
 		m_pFileHeader = (PBITMAPFILEHEADER)m_pFileData;				// Adresse des FileHeaders (Beginnt natürlich beim Anfang des Buffers)
 		m_pInfoHeader = (PBITMAPINFOHEADER)&m_pFileData[sizeof(BITMAPFILEHEADER)]; // Adresse des BmpHeaders durch Offset von FileHeader (Beginnt nach FileHeader)
 
@@ -67,9 +80,9 @@ namespace GDI
 		UINT& uiBpp = m_pFrameData->uiBpp;
 		unsigned char* pData = m_pFrameData->pData;
 
-		for (int y = 0; y < uiHeight; ++y)
+		for (UINT y = 0; y < uiHeight; ++y)
 		{
-			for (int x = 0; x < uiWidth; ++x)
+			for (UINT x = 0; x < uiWidth; ++x)
 			{
 				if (x <= 1000)
 				{
@@ -121,7 +134,7 @@ namespace GDI
 		HANDLE hFile = NULL;
 		DWORD dwWritten = 0;
 		int iErr = 0;
-		int iNewYOrder = 0;
+		UINT iNewYOrder = 0;
 		UINT& uiWidth = m_pFrameData->uiWidthDest;
 		UINT& uiHeight = m_pFrameData->uiHeightDest;
 		UINT& uiBpp = m_pFrameData->uiBpp;

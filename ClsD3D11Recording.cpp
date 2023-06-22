@@ -116,7 +116,7 @@ void ClsD3D11Recording::Recording()
 		SinkWriter().StartReadAudioHWBufferThread();
 	D3D11().BitBltDataToRT();
 	//D3D11().SetConstantBuffer();
-	//WinGDI().TakeScreenshot();
+	WinGDI().TakeScreenshot();
 	SinkWriter().LoopRecording();
 	D3D11().PresentTexture();
 	SyncFPS().SleepUntilNextFrame();

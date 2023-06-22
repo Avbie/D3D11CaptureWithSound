@@ -2,7 +2,7 @@
 /**********static Definitions*********/
 UINT32 ClsCoreAudio::m_uiNumFrames = 0;
 UINT32 ClsCoreAudio::m_uiPacketLength = 0;
-REFERENCE_TIME ClsCoreAudio::m_lCurDurationHardwareBuffer = 0;
+double ClsCoreAudio::m_dCurDurationHardwareBuffer = 0;
 BYTE* ClsCoreAudio::m_pData = NULL;
 ComPtr<IAudioCaptureClient> ClsCoreAudio::m_pCaptureClient = 0;
 WAVEFORMATEX* ClsCoreAudio::m_pWaveFormat = NULL;
@@ -22,7 +22,7 @@ ClsCoreAudio::ClsCoreAudio()
     // static
     m_uiNumFrames = 0;
     m_uiPacketLength = 0;
-    m_lCurDurationHardwareBuffer = 0;
+    m_dCurDurationHardwareBuffer = 0;
     m_pWaveFormat = NULL;
     m_pData = NULL;
     m_pCaptureClient.ReleaseAndGetAddressOf();
@@ -59,7 +59,7 @@ void ClsCoreAudio::CalcCurrentDurationOfBuffer()
 {
     // Ermittelt die Buffersize als Zeitangabe in 100erNanosekundenEinheiten
     // Ist  Größe des akt. HardwareBuffers
-    m_lCurDurationHardwareBuffer = (double)MULTIPL100NS * m_uiNumFramesHWBuffer / m_pWaveFormat->nSamplesPerSec;
+    m_dCurDurationHardwareBuffer = MULTIPL100NS * (double)m_uiNumFramesHWBuffer / (double)m_pWaveFormat->nSamplesPerSec;
 }//END-FUNC
 /// <summary>
 /// Init. the AudioClient in Loopback-Mode. 
@@ -172,10 +172,10 @@ HRESULT ClsCoreAudio::PlaySilence()
     // New Thread calls StartSilence with m_myEvents as Param
     m_hThreadPlaySilence = CreateThread(NULL, 0, ClsCoreAudio::StartSilence, &m_myEvents, 0, NULL);
     // If Thread cannot be created
-    if (NULL == m_hThreadPlaySilence)
+    if (m_hThreadPlaySilence == NULL || m_hEventPlayingSilence == NULL)
     {
-        printf("CreateThread failed: last error is %u\n", GetLastError());
-        CloseHandle(m_hEventPlayingSilence);
+        printf("Create Event/Thread failed: last error is %u\n", GetLastError());
+        //CloseHandle(m_hEventPlayingSilence);
         return E_FAIL;
     }//END-IF
     // wait until the other Thread playing silence and set the Event
@@ -210,12 +210,12 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
 {
     HRESULT hr = NULL;
     DWORD dwFlags = 0;
-    UINT uiFramesInReBuffer = 0;
+    UINT64 uiFramesInReBuffer = 0;
     UINT uiTotalAudioBytes = 0;
     // 1 AudioFrame includes 2 Samples. 2* SampleSize = 1 AudioFrame
     UINT uiAFrameSize = m_pWaveFormat->nChannels * m_pWaveFormat->wBitsPerSample / 8;
     // Number of AudioFrames for one VideoFrame
-    double uiAudioFramesPerVidFrame = (double)m_pWaveFormat->nSamplesPerSec / (double)*pFPS;
+    UINT uiAudioFramesPerVidFrame = m_pWaveFormat->nSamplesPerSec / *pFPS;
     UINT64 uiBeginFrame = 0;
     UINT64 uiEndFrame = 0;
 
@@ -239,7 +239,7 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
         {
             // Sleep for half the buffer duration.
             // to large values will affect the MainLoop
-            Sleep(Ns100UnitsInMs(m_lCurDurationHardwareBuffer) / 2);
+            Sleep(Ns100UnitsInMs(m_dCurDurationHardwareBuffer) / 2);
             hr = m_pCaptureClient->GetNextPacketSize(&m_uiPacketLength);
         }//END-IF
         HR_RETURN_ON_ERR(hr, m_pCaptureClient->GetBuffer(
@@ -255,10 +255,11 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
         // must be released befor we can call GetBuffer again
         m_pCaptureClient->ReleaseBuffer(m_uiNumFrames);
     }//END-WHILE Frames
+   
     // allocate the Bytes of AudioFrames that are needed for one VideoFrame
-    *pAudioData = (BYTE*)malloc(uiAudioFramesPerVidFrame * uiAFrameSize);
+    *pAudioData = (BYTE*)malloc(static_cast<UINT64>(uiAudioFramesPerVidFrame) * static_cast<UINT64>(uiAFrameSize));
     // Gets the Data of Audio for exactly one VideoFrame
-    m_myRebuffer.PopX(*pAudioData, uiAudioFramesPerVidFrame * uiAFrameSize);
+    m_myRebuffer.PopX(*pAudioData, static_cast<UINT64>(uiAudioFramesPerVidFrame) * static_cast<UINT64>(uiAFrameSize));
     *pBufferSize = uiAudioFramesPerVidFrame * uiAFrameSize;
     HR_RETURN_ON_ERR(hr, ReleaseBuffer());
     return hr;
@@ -295,7 +296,7 @@ DWORD WINAPI ClsCoreAudio::StartSilence(LPVOID pParm)
 /// </summary>
 /// <param name="lValue">Value in 100er Nanosecond Units</param>
 /// <returns></returns>
-REFERENCE_TIME ClsCoreAudio::Ns100UnitsInMs(REFERENCE_TIME l100NanosecondUnits)
+DWORD ClsCoreAudio::Ns100UnitsInMs(double dw100NanosecondUnits)
 {
-    return l100NanosecondUnits / 10000;
+    return (DWORD)(dw100NanosecondUnits / 10000);
 }//END-FUNC

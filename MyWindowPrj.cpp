@@ -15,7 +15,6 @@
 /// <returns>NULL</returns>
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
-	HRESULT hResult;										// Rückgabewert für Win32Api Funktionen
     UNREFERENCED_PARAMETER(hPrevInstance);					// Nicht referenzierte Parameter Warning unterdrücken
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -28,7 +27,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	* ClsSilence::LoadAudioBuffer(..) dFrequency  = 0 
 	* Bug: with resolution 1680x1050, Sinkwriter gets a other width and recorded video is broken
 	*/
-	//todo button Record and Stop
+	// todo button Record and Stop
+	// todo compilerwarnungen durchgehen
 	myVideoDescriptor.strFileName = "Output.mp4";
 	myVideoDescriptor.bIsAudio = true;
 	myVideoDescriptor.strWndTitle = "Editor";

@@ -322,7 +322,7 @@ void ClsSinkWriter::FlipFormat(DWORD& dwStride, unsigned char* pFrameBuffer, BYT
         // pFrameBuffer ist Position der ersten Zeile
         // mit + (Height*dwStride) haben wir Zeile nach der letzten Zeile
         // deswegen height-1
-        *pPosition = (BYTE*)pFrameBuffer + (uiHeightDest - 1) * dwStride;
+        *pPosition = (BYTE*)pFrameBuffer + static_cast<UINT64>(uiHeightDest - 1) * dwStride;
         // Mit Angabe eines negativen Elementlänge,
         // sag ich ihm, dass er Buffer rückwärts gehen soll, sonst läuft er vorwärts.
         dwStride = dwStride * (-1);
@@ -425,10 +425,10 @@ HRESULT ClsSinkWriter::StartReadAudioHWBufferThread()
         &m_myDataForAudioThread,
         0,
         &dwThreadID);
-    if (NULL == m_hThreadReadAudioHWBuffer)
+    if (m_hThreadReadAudioHWBuffer == NULL)
     {
         printf("CreateThread failed: last error is %u\n", GetLastError());
-        CloseHandle(m_hThreadReadAudioHWBuffer);
+        //CloseHandle(m_hThreadReadAudioHWBuffer);
         return E_FAIL;
     }//END-IF
     return hr;
