@@ -12,6 +12,12 @@
 #define IDI_MYWINDOWPRJ			107
 #define IDI_SMALL				108
 #define IDC_MYWINDOWPRJ			109
+#define IDM_RECORDSTART			110
+#define IDM_RECORDSTOP			111
+#define IDM_MONMAIN				112
+#define IDM_MON1				113
+#define IDM_WINDOW				114
+
 #define IDC_MYICON				2
 #ifndef IDC_STATIC
 #define IDC_STATIC				-1

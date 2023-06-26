@@ -23,21 +23,45 @@ using namespace std;
 enum class CopyMethod { Mapping, D2D1Surface, SubResource, DesktopDupl };
 enum class PicDataBitReading { Invert, Standard };
 
-
+//forward declaration
+namespace GDI
+{
+	class ClsWndHandle;
+}
 /// <summary>
 /// Container for transfering Data into Subclasses of the Superclass
 /// </summary>
 struct FrameData
 {
 public:
-	UINT uiHeightDest;
-	UINT uiWidthDest;
-	UINT uiHeightSrc;
-	UINT uiWidthSrc;
+	FrameData()
+	{
+		bWndAsSrc = FALSE;
+		uiBpp = 0;
+		uiHeightDest = 0; // Target Res for Sinkwriter e.g. 2560x1440
+		uiWidthDest = 0;
+		uiHeightSrc = 0;	// SourceResolution of the Source e.g. Monitor 1920x1080
+		uiWidthSrc = 0;
+		uiPixelDataSize = 0;
+		uiTop = 0;			// Window using virtual Monitor System 2. Monitor e.g. Mon1Width + Mon2Width
+		uiLeft = 0;
+		pCpyMethod = NULL;
+		pClsWndHandle = NULL;
+		pData = NULL;
+		
+	}
+public:
+	BOOL bWndAsSrc;
 	UINT uiBpp;
+	UINT uiHeightDest; // Target Res for Sinkwriter e.g. 2560x1440
+	UINT uiWidthDest;
+	UINT uiHeightSrc;	// SourceResolution of the Source e.g. Monitor 1920x1080
+	UINT uiWidthSrc;
 	UINT uiPixelDataSize;
-	UINT uiTop;
+	UINT uiTop;			// Window using virtual Monitor System 2. Monitor e.g. Mon1Width + Mon2Width
 	UINT uiLeft;
+	CopyMethod* pCpyMethod;
+	GDI::ClsWndHandle* pClsWndHandle;
 	unsigned char* pData;
 };
 
@@ -60,8 +84,9 @@ void SafeRelease(T** ppT)
 *  Wenn hrTemp < 0 dann ERROR -> akt. Funktion wird mit HRESULT beendet
 */
 #define NODESKDUPL 1
-#define WNDTITLESET 3
-#define WNDFOUND 7
+#define SETWND 3
+#define WNDTITLESET 7
+#define WNDFOUND 15
 
 // Default Audio HardwareBuffer
 #define DEFAUDIOHWBUFFERSIZE 300000 

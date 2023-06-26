@@ -18,7 +18,7 @@ class ClsSinkWriter
 {
 private:
     // generall
-    BOOL m_bFinished;
+    //BOOL m_bFinished;
     ComPtr <IMFSinkWriter> m_pSinkWriter;
     FrameData* m_pFrameData;
     // Video
@@ -62,7 +62,7 @@ public:
     HRESULT PrepareInputOutput();
     /*********Video*******************/
 public: 
-    void SetBitRate(UINT32 uiBitRate);
+    void SetBitRate();
     void SetBitReading(PicDataBitReading myBitReading);     // Sets Type of PixelData Interpretation (Bmp: Last to First Line)
     void SetFileName(const char* strFileName);
     void SetFPS(UINT32 uiFPS);

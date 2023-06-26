@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ClsCalcD3DWnd.h" />
     <ClInclude Include="ClsCoreAudio.h" />
     <ClInclude Include="ClsD2D1.h" />
     <ClInclude Include="ClsD3D11Recording.h" />

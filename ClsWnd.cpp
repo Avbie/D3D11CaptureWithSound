@@ -18,7 +18,7 @@ ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 {
 	m_bInFocus = FALSE;
 	m_hInstance = GetModuleHandle(NULL);
-	m_uiMyFlags = WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	m_uiMyFlags = WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
 	m_mouseState = {};
 	m_Msg = {};
 	m_pClsD3D11Recording = pClsD3D11Recording;
@@ -38,6 +38,7 @@ ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 		this								// CustomParameter, VoidPointer
 	);
 	CreateMyMenu();							// Simple Menu
+	//CreateButton();
 	m_pClsD3D11Recording->SetHWND(m_hWnd);	// sets the WindowHandle in Superclass
 }//END-CONSTR
 /// <summary>
@@ -190,13 +191,35 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 			m_mouseState.posY = GET_Y_LPARAM(lParam);
 		}
 		break;
-
+		case WM_SIZE:
+		{			
+			UINT uiWidth = LOWORD(lParam);
+			UINT uiHeight = HIWORD(lParam);
+			
+			m_pClsD3D11Recording->ResizeWindow();
+			break;
+		}
 		case WM_COMMAND:
 		{
 			int wmId = LOWORD(wParam);
 			// Menüauswahl analysieren:
 			switch (wmId)
 			{
+			case IDM_RECORDSTART:
+				m_pClsD3D11Recording->PrepareRecording();
+				break;
+			case IDM_RECORDSTOP:
+				m_pClsD3D11Recording->Finalize();
+				break;
+			case IDM_MONMAIN:
+				m_pClsD3D11Recording->SetMonitorAsSrc(MAINMONITOR);
+				break;
+			case IDM_MON1:
+				m_pClsD3D11Recording->SetMonitorAsSrc(1);
+				break;
+			case IDM_WINDOW:
+				m_pClsD3D11Recording->SetWndAsSrc();
+				break;
 			case IDM_ABOUT:
 				DialogBox(
 					m_hInstance,							// current Application Handle for the OS
@@ -251,3 +274,18 @@ void ClsWnd::CreateMyMenu()
 {
 	ClsMenu oMyMenu(m_hWnd);
 }//END-FUNC
+void ClsWnd::CreateButton()
+{
+	HWND hwndButton = CreateWindow(
+		L"BUTTON",  // Predefined class; Unicode assumed 
+		L"OK",      // Button text 
+		WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+		10,         // x position 
+		10,         // y position 
+		100,        // Button width
+		100,        // Button height
+		m_hWnd,     // Parent window
+		NULL,       // No menu.
+		(HINSTANCE)GetWindowLongPtr(m_hWnd, GWLP_HINSTANCE),
+		NULL);      // Pointer not needed.
+}

@@ -32,9 +32,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	myVideoDescriptor.strFileName = "Output.mp4";
 	myVideoDescriptor.bIsAudio = true;
 	myVideoDescriptor.strWndTitle = "Editor";
-	myVideoDescriptor.uiFPS = 25;
-	myVideoDescriptor.myCpyMethod = CopyMethod::DesktopDupl;
-	myVideoDescriptor.uiMonitorID = MAINMONITOR;
+	myVideoDescriptor.uiFPS = 60;
+	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
+	myVideoDescriptor.uiMonitorID = 1;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);
 	ClsWnd oMyWnd(											// führt CreateWindowEx aus, d.h. erzeugt Fenster die reg. sind. 
@@ -42,12 +42,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		L"MyProgramm", &myClsD3D11Recording);				// Titel
 	oMyWnd.SetVisibility(true);								// Fenster sichtbar machen
 	myClsD3D11Recording.Init3DWindow();
-	myClsD3D11Recording.PrepareRecording();
+	//myClsD3D11Recording.SetRecordingStatus(true);
+	//myClsD3D11Recording.PrepareRecording();
 	while (oMyWnd.RunMsgLoop())								// WndMainLoop
 	{
-		myClsD3D11Recording.Recording();
+		myClsD3D11Recording.Loop();
 	}
-	myClsD3D11Recording.StopRecording();
+	//myClsD3D11Recording.SetRecordingStatus(false);
+	//myClsD3D11Recording.Finalize();
 	CoUninitialize();
 	return 0;
 }//END-FUNC Main

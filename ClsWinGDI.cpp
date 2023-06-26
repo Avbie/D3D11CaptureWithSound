@@ -7,12 +7,13 @@ namespace GDI
 	/// </summary>
 	ClsWinGDI::ClsWinGDI()
 	{
+		//m_bIsWnd = FALSE;
 		m_hFileData = NULL;
 		m_hMemDC = NULL;
 		m_hDisplayDC = NULL;
 		m_hBitmap = NULL;
 		m_uiWindowFlag = 0;
-		m_myCpyMethod = DEFCPYMETHOD;
+		//m_myCpyMethod = DEFCPYMETHOD;
 		m_strTitle = NULL;
 		m_strBmpFileName = NULL;
 		m_pFrameData = NULL;
@@ -22,17 +23,17 @@ namespace GDI
 	/// </summary>
 	ClsWinGDI::~ClsWinGDI()
 	{
-		ReleaseDC(m_MyClsWndHandle.GetHandle(), m_hDisplayDC);
+		ClearObjects();
 	}//END-CONS
 	/**********Get-Set-Methoden*******/
 	ClsScreenshot& ClsWinGDI::ScreenShot()
 	{
 		return m_myClsScreenShot;
 	}//END-FUNC
-	void ClsWinGDI::SetCpyMethod(CopyMethod& myCpyMethod)
+	/*void ClsWinGDI::SetCpyMethod(CopyMethod& myCpyMethod)
 	{
 		m_myCpyMethod = myCpyMethod;
-	}//END-FUNC
+	}//END-FUNC*/
 	void ClsWinGDI::SetFrameData(FrameData** ppFrameData)
 	{
 		m_pFrameData = *ppFrameData;
@@ -42,6 +43,11 @@ namespace GDI
 	{
 		m_strTitle = strTitle;
 	}//END-FUNC
+	void ClsWinGDI::SetWndAsSrc(BOOL bWnd)
+	{
+		//m_bIsWnd = bWnd;
+		m_pFrameData->bWndAsSrc = bWnd;
+	}
 	/*********************************/
 	/// <summary>
 	/// Sets the Window-handle depending on the Window-Title
@@ -55,55 +61,73 @@ namespace GDI
 		HRESULT hr = NULL;
 		RECT WindowSrcRect = {};							// RECT for ResolutionInfo
 
-		if (m_myCpyMethod != CopyMethod::DesktopDupl)
-			m_uiWindowFlag = m_uiWindowFlag | NODESKDUPL;
+		ClearObjects();
+
+		if (*m_pFrameData->pCpyMethod != CopyMethod::DesktopDupl)
+			m_uiWindowFlag = m_uiWindowFlag | 0b0001;
 
 		// DesktopDupl
 		if (m_uiWindowFlag == 0)
 		{
-			m_MyClsWndHandle.SetWndTitle("Desktop");		// Titel des Fensters
+			m_MyClsWndHandle.SetWndTitle(DESKTOP);			// Title of the Window
 			return S_OK;
-			//return GetResolutionOfWndHandle();	
 		}
-
-		if (m_uiWindowFlag == NODESKDUPL && IsWndTitle())
+		if (IsWnd())
 		{
-			m_uiWindowFlag = m_uiWindowFlag | WNDTITLESET;	// Set Title for Window (1)
-		}
+			m_uiWindowFlag = m_uiWindowFlag | 0b0010;		// Bitflag for Window
+		}//END-iF
+		if (IsWndTitle())
+		{
+			m_uiWindowFlag = m_uiWindowFlag | 0b0100;		// Bitflag for WindowTitle
+		}//END-IF
+		/*
+		* Will enter the if case with
+		* 1 = No Wnd, No Title
+		* 3 = Wnd, No Title
+		* 5 = No Wnd, Title
+		*/
+		if (m_uiWindowFlag < WNDTITLESET)
+		{
+			m_MyClsWndHandle.SetWndTitle(DESKTOP);			// DESKTOP
+			m_hDisplayDC = GetDC(NULL);						// DC of the Window, whole Desktop
+			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
+			HR_RETURN_ON_ERR(hr, AllocateMemDC());
 
+			return S_OK;
+		}//END-IF
 		if (m_uiWindowFlag == WNDTITLESET)					// Looking for Window with set Title
 		{
 			m_MyClsWndHandle.SetWndTitle(m_strTitle);		// Titel des Fensters
-			// Passenden WndHandle zum Title finden und in MyClshWnd setzen
-			// EnumWindowsProc gibt False zurück und verlässt WindowProc wenn Fenster gefunden
+			// Find the WndHandle that has m_strTitle
+			// EnumWindowsProc will return FALSE to EnumWindows if the title was found
+			// If EnumWindowsProc returns FALSE EnumWindows will leave the Loop and will return false
 			if (!EnumWindows(
 				EnumWindowsProc,
 				reinterpret_cast<LPARAM>(&m_MyClsWndHandle)))
-				m_uiWindowFlag = m_uiWindowFlag | WNDFOUND;	// Valid Window with that Title found (3)
-		}
-		if (m_uiWindowFlag < WNDFOUND)						// Wenn Fenster nicht gefunden oder kein Titel gesetzt wurde							
-		{
-			m_MyClsWndHandle.SetWndTitle(DESKTOP);			// Titel des Fensters
-			m_hDisplayDC = GetDC(NULL);						// DC des Fensterhandles, hier der komplette Desktop
-			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
-			HR_RETURN_ON_ERR(hr, AllocateMemDC());
-			m_MyClsWndHandle.SetWndTitle("Desktop");		// Titel des Fensters
-		}//END-ELSE no valid WndHandle
-
+				m_uiWindowFlag = m_uiWindowFlag | 0b1000;	// Bitflag for Window found
+		}//END-IF WNDTITLESET
 		if (m_uiWindowFlag == WNDFOUND)
 		{
-			m_hDisplayDC = GetDC(m_MyClsWndHandle.GetHandle());	// DC des Fensterhandles
+			m_hDisplayDC = GetDC(m_MyClsWndHandle.GetHandle());	// DC of the WndHandle
 			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
-			HR_RETURN_ON_ERR(hr, AllocateMemDC());
+			HR_RETURN_ON_ERR(hr, AllocateMemDC());			// compatible MemDC with a HBitmap that has the specific destination size
 
 			HR_RETURN_ON_INT_ERR(GetClientRect(
-				m_MyClsWndHandle.GetHandle(), &WindowSrcRect));	// Auflösung des Fensters
+				m_MyClsWndHandle.GetHandle(), &WindowSrcRect));	// keep the size of the window
 			m_pFrameData->uiWidthSrc = WindowSrcRect.right - WindowSrcRect.left;
 			m_pFrameData->uiHeightSrc = WindowSrcRect.bottom - WindowSrcRect.top;
 			m_pFrameData->uiTop = 0;
 			m_pFrameData->uiLeft = 0;
 		}//END-IF Wnd-Handle
+		else 
+		{
+			m_MyClsWndHandle.SetWndTitle(DESKTOP);			// title of the window
+			m_hDisplayDC = GetDC(NULL);						// DC of the Window, whole Desktop
+			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
+			HR_RETURN_ON_ERR(hr, AllocateMemDC());
 
+			return S_OK;
+		}//END-ELSE no valid WndHandle
 		return hr;
 	}//END-FUNC
 	/// <summary>
@@ -117,14 +141,18 @@ namespace GDI
 		UINT& uiPixelDataSize = m_pFrameData->uiPixelDataSize;
 		if (m_uiWindowFlag == 0)						// DesktopDupl
 			return S_OK;
-		if (m_uiWindowFlag >= WNDTITLESET)				// GDI Mapping: DesktopCpy or WndCpy
+		if (m_uiWindowFlag >= NODESKDUPL)				// GDI Mapping: DesktopCpy or WndCpy
 		{
 			//HANDLE hImgData = NULL;
 			BYTE* pImgData = NULL;
 
 			HR_RETURN_ON_ERR(hr, CopyBitmapDataToMemDC());
-
 			pImgData = (BYTE*)malloc(m_pFrameData->uiPixelDataSize);
+			if (!pImgData)
+			{
+				printf("pImgData failed: last error is %u\n", GetLastError());
+				return E_FAIL;
+			}
 			// Pixeldaten aus hBitmap auslesen
 			HR_RETURN_ON_NULL_ERR(GetBitmapBits(
 				m_hBitmap, uiPixelDataSize, pImgData));
@@ -145,8 +173,24 @@ namespace GDI
 
 		return hr;
 	}//END-FUNC
+/*************************************************************************************************
+**************************************PRIVATE-METHODES********************************************
+*************************************************************************************************/
+	
 	/// <summary>
-	/// 
+	/// Clear all objects and freeing all memory.
+	/// CalledBy: Destructor and SetFreeWindow()
+	///  - SetFreeWindow freeing all objects right before reuse it.
+	/// </summary>
+	void ClsWinGDI::ClearObjects()
+	{
+		DeleteObject(m_hMemDC);
+		DeleteObject(m_hBitmap);
+		ReleaseDC(m_MyClsWndHandle.GetHandle(), m_hDisplayDC);
+		ReleaseDC(NULL, m_hDisplayDC);
+		m_uiWindowFlag = 0;
+	}
+	/// <summary>
 	/// - Callback Function used in FindSetWindow() in EnumWindowProc 
 	///   for specifing the right Source Window depending on the Title
 	/// - This function will be called in a loop in EnumWindowProc, for every Window that is currently open
@@ -156,16 +200,23 @@ namespace GDI
 	/// <param name="lParam">"zipped" ClsWndHandle Object that will keep the right WindowHandle</param>
 	/// <returns>FALSE: breaks the loop in EnumWindowProc, window found</returns>
 	/// <returns>TRUE: continue loop, no specific window found</returns>
-	BOOL CALLBACK ClsWinGDI::EnumWindowsProc(HWND hWnd, LPARAM lParam) {
-
-		TCHAR buf[1024]{};
-		TCHAR strName[1024]{};
-		USES_CONVERSION;
-
+	BOOL CALLBACK ClsWinGDI::EnumWindowsProc(HWND hWnd, LPARAM lParam) 
+	{
+		TCHAR wstrCurTitle[1024]{};
+		wstring wsCurTitle;
+		string sCurTitle;
+		string sTitleLookingFor;
+		
+		//USES_CONVERSION;
 		ClsWndHandle* pClsWndHandle = reinterpret_cast<ClsWndHandle*>(lParam);
-		GetClassName(hWnd, buf, 100);
-		GetWindowText(hWnd, strName, 1024);
-		if (_tcsstr(strName, A2T(pClsWndHandle->GetWndTitle())))		// "atlstr.h"  A2T-Macro  ANSI to Unicode
+		//GetClassName(hWnd, buf, 100);
+		GetWindowText(hWnd, wstrCurTitle, 1024);
+		wsCurTitle.assign(wstrCurTitle);
+		sCurTitle.assign(wsCurTitle.begin(), wsCurTitle.end());
+
+		sTitleLookingFor.assign(pClsWndHandle->GetWndTitle());
+
+		if (sCurTitle.find(sTitleLookingFor) != string::npos)
 		{
 			pClsWndHandle->SetHandle(hWnd);
 			return FALSE;												// Title found, leave loop in EnumWindowProc
@@ -185,6 +236,10 @@ namespace GDI
 			return true;
 		return false;
 	}//END-FUNC
+	BOOL ClsWinGDI::IsWnd()
+	{
+		return m_pFrameData->bWndAsSrc;
+	}
 	/// <summary>
 	/// Checks if the Title is set
 	/// CalledBy: FindSetWindow()
@@ -234,9 +289,11 @@ namespace GDI
 	HRESULT ClsWinGDI::CopyBitmapDataToMemDC()
 	{
 		HRESULT hr = NULL;
+		BOOL bReturn = FALSE;
 
 		if (IsScaled())										// SrcRes have to be scale to the dest. resolution
 		{
+			//HR_RETURN_ON_INT_ERR(StretchBlt(				// Kopieren der BitmapDaten die als Bitmap-Unterobj in den DCs existieren
 			HR_RETURN_ON_INT_ERR(StretchBlt(				// Kopieren der BitmapDaten die als Bitmap-Unterobj in den DCs existieren
 				m_hMemDC,									// Ziel: MemoryDC
 				0,											// X (0,0 ist oben links)
@@ -255,7 +312,7 @@ namespace GDI
 		}
 		else
 		{
-			BitBlt(
+			HR_RETURN_ON_INT_ERR(BitBlt(
 				m_hMemDC,									// Ziel: MemoryDC
 				0,											// Dest: X (0,0 ist oben links)
 				0,											// Dest: Y (0,0 ist oben links)
@@ -264,7 +321,7 @@ namespace GDI
 				m_hDisplayDC,								// Source hDisplayDC, also der DisplayDeviceContext
 				0,											// Src: X (0,0 ist oben links)
 				0,											// Src: Y (0,0 ist oben links)
-				SRCCOPY);
+				SRCCOPY));
 		}//END-IF IsScaled
 		return hr;
 	}//END-FUNC
@@ -284,6 +341,7 @@ namespace GDI
 		{
 			HR_RETURN_ON_INT_ERR(GetClientRect(
 			m_MyClsWndHandle.GetHandle(), &WindowSrcRect));	// Auflösung des Fensters
+			m_pFrameData->pClsWndHandle = &m_MyClsWndHandle;
 			m_pFrameData->uiWidthSrc =  WindowSrcRect.right - WindowSrcRect.left;			// Breite
 			m_pFrameData->uiHeightSrc = WindowSrcRect.bottom - WindowSrcRect.top;
 		}//END-IF valid Wnd-Title (Window for recording)

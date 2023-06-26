@@ -46,6 +46,14 @@ public:
 	}
 };
 
+struct PerformanceCounter
+{
+	LARGE_INTEGER start = { 0 };
+	LARGE_INTEGER end = { 0 };
+	LARGE_INTEGER interval = { 0 };
+	LARGE_INTEGER freq = { 0 };
+};
+
 /// <summary>
 /// Used in the Enumation of Monitors in the MonitorEnum-CallbackFunction.
 /// In the Callback this struct will be set with the Data of a Monitor.
@@ -103,6 +111,7 @@ public:
 	
 private:
 	BOOL m_bIsAudio;
+	BOOL m_bIsRecording;
 	HWND m_hWnd;
 	static UINT m_uiMaxMonitors;
 	UINT m_uiPickedMonitor;
@@ -114,9 +123,11 @@ private:
 	RECT m_myClientRect;			// Client Area
 	RECT m_myWndRect;
 	PicDataBitReading m_myBitReading;
-	CopyMethod m_myCpyMethod;
+	VideoDescriptor* m_pVidDesc;
+	//CopyMethod m_myCpyMethod;
 	FrameData* m_pFrameData;
 	std::vector<MonitorInfo*> m_vMonitors;
+	//ClsWndHandle m_MyClsWndHandle;
 
 private:
 	D3D::ClsD3D11 m_myClsD3D11;
@@ -127,17 +138,22 @@ public:
 	ClsD3D11Recording(VideoDescriptor* pVidDesc);
 	~ClsD3D11Recording();
 
+	void Finalize();
+	BOOL GetRecordingStatus();
 	void Init3DWindow();
+	void Loop();
 	void PrepareRecording();
-	void Recording();
-	void StopRecording();
+	void SetRecordingStatus(BOOL bRecord);
+	void SetWndAsSrc();
+	void SetMonitorAsSrc(UINT uiMonitorID);
+	void ResizeWindow();
 private:
 	D3D::ClsD3D11& D3D11();
 	ClsSinkWriter& SinkWriter();
 	ClsFPSSync& SyncFPS();
 	GDI::ClsWinGDI& WinGDI();
 
-	void SetCpyMethod(CopyMethod myCpyMethod);
+	void SetCpyMethod(CopyMethod* myCpyMethod);
 	void SetDestResolution(UINT uiWidthDest, UINT uiHeightDest);
 	void SetHWND(HWND hWnd);
 	void SetSrcDisplay(UINT uiMonitorID);
@@ -150,7 +166,6 @@ private:
 	UINT GetWndYSize();
 	UINT GetXPos();
 	UINT GetYPos();
-	RECT GetMyClientRect();
 };
 
 inline UINT ClsD3D11Recording::m_uiMaxMonitors = 0;

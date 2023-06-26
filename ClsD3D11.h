@@ -2,6 +2,7 @@
 #include "framework.h"
 #include "D3DBuffer.h"
 #include "ClsD2D1.h"
+#include "ClsCalcD3DWnd.h"
 //#include "ClsDataContainer.h"
 
 #define PFORMAT DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -15,11 +16,12 @@ namespace D3D
 	class ClsD3D11
 	{
 	private:
+		//UINT m_iSwitchBuffer = 0;
 		HWND m_hWnd;										// Target Window for displaying Data
 		UINT m_uiPickedMonitor;								// Monitor that will be used as DataSource
 		float m_fClearColor[4] = { 0.3f, 1.0f, 0.3f, 1.0f };// ClearColor
 		RECT m_myClientRect;								// Client Window Place (Without Border, Menu etc.)
-		CopyMethod m_myCpyMethod;							// CopyMethod of PixelData
+		//CopyMethod m_myCpyMethod;							// CopyMethod of PixelData
 		FrameData* m_pFrameData;							// Frame Format Information
 		
 		// Device, Factory, SwapChain
@@ -32,7 +34,11 @@ namespace D3D
 		// Swapchain
 		ComPtr<IDXGISwapChain1> m_pDxgiSwapChain;			// needed for Backbuffer access
 		ComPtr<ID3D11Texture2D> m_pBackBuffer;				// Backbuffer of the SwapChain
+		//ComPtr<ID3D11Texture2D> m_pBackBuffer2;				// Backbuffer of the SwapChain
 		ComPtr<ID3D11RenderTargetView> m_pTarRenderView;	// RenderTargetView, will be binded to the Backbuffer
+
+		// Size SwapChain
+		ClsCalcD3DWnd m_myClsCalcD3DWnd;
 
 		// Displaying Texture, will be feeded with PixelData
 		ComPtr<ID3D11Texture2D> m_pD3D11Texture;			// Texture that will be binded to the ShaderView
@@ -49,8 +55,8 @@ namespace D3D
 		
 		// DesktopDupl
 		ComPtr<IDXGIOutputDuplication> m_pDeskDupl;			// Information of a MonitorOutput (DXGIOutput)
-		ComPtr<IDXGIResource> m_pDxgiDesktopResource;		// Container for PixelData of the Output
-		ComPtr<ID3D11Texture2D> m_pD3dAcquiredDesktopImage; // Resource will be casted to this Texture
+		//ComPtr<IDXGIResource> m_pDxgiDesktopResource;		// Container for PixelData of the Output
+		//ComPtr<ID3D11Texture2D> m_pD3dAcquiredDesktopImage; // Resource will be casted to this Texture
 		ComPtr<ID3D11Texture2D> m_pD3D11TextureCPUAccess;	// Texture with CPU Access, same Data as m_pD3dAcquiredDesktopImage
 		D3D11_TEXTURE2D_DESC m_myTextureDescCPUAccess;		// TextureDescription
 		DXGI_OUTDUPL_FRAME_INFO m_MyFrameInfo;				// additional Information of the Output
@@ -67,11 +73,13 @@ namespace D3D
 		ClsD3D11();
 		~ClsD3D11();
 	public:
-		void SetClientRect(RECT myClientRect);
-		void SetCpyMethod(CopyMethod& myCpyMethod);
+		HRESULT WndSizeHasChanged();
+		//void SetClientRect(RECT myClientRect);
+		//void SetCpyMethod(CopyMethod& myCpyMethod);
 		void SetFrameData(FrameData** pFrameData);
 		void SetPickedMonitor(UINT uiMonitor);
 		void SetWnd(HWND hWnd);
+		ClsCalcD3DWnd& GetCalcD3DWnd();
 		
 		HRESULT BitBltDataToRT();
 		HRESULT CreateAndSetSampler();
@@ -83,11 +91,12 @@ namespace D3D
 		HRESULT CreateShaderView();
 		HRESULT CreateSwapChain();
 		HRESULT CreateSwapChainBuffer();
-		HRESULT PreparePresentation();
+		HRESULT ReSizeD3D11Window();
 		HRESULT PresentTexture();
 		HRESULT SetConstantBuffer();
 	private:
-		
+		//void CalcNewWndPos(UINT uiValidWidth, UINT uiValidHeight, UINT uiWidth, UINT uiHeight, UINT* uiTopX, UINT* uiTopY);
+		//void CalcNewWndSize(UINT uiWndWidth, UINT uiWndHeight, UINT* uiNewWndWidth, UINT* uiNewWndHeight);
 		HRESULT CreateConstantBuffer();
 		HRESULT CreateIndexBuffer();
 		HRESULT CreatePixelShader();
@@ -95,7 +104,7 @@ namespace D3D
 		HRESULT CreateVertexShader();
 		HRESULT BitBltDataToD2D1Resource();
 		HRESULT BitBltDataToD3D11SubResource();
-		HRESULT DesktopDuplToRAM(); // only full Desktop of a Monitor
+		HRESULT DesktopDuplToRAM(ComPtr<ID3D11Texture2D> pD3dAcquiredDesktopImage); // only full Desktop of a Monitor
 		HRESULT GetDesktopDuplByGPU(); // only full Desktop of a Monitor
 		HRESULT InitD2D1();
 		HRESULT InitDesktopDuplication();

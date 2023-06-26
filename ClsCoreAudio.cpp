@@ -143,14 +143,25 @@ HRESULT ClsCoreAudio::InitEngine()
 /// <returns>HRESULT</returns>
 HRESULT ClsCoreAudio::FinishStream()
 {
+    BOOL bClose = false;
     HRESULT hr = NULL;
     HR_RETURN_ON_ERR(hr, m_pAudioClient->Stop());           // Stop recording.
 
     m_myEvents.bStopped = true;                             // forces a break in the slientplay loop/thread
     WaitForSingleObject(m_hThreadPlaySilence, INFINITE);    // wait until the SilentPlayThread finished (Thread join)
 
-    CloseHandle(m_hThreadPlaySilence);                      // thread handle schliessen
-    CloseHandle(m_hEventPlayingSilence);
+    bClose= CloseHandle(m_hThreadPlaySilence);                      // thread handle schliessen
+    if (!bClose)
+    {
+        printf("close Handle failed: last error is %u\n", GetLastError());
+        return E_FAIL;
+    }
+    bClose = CloseHandle(m_hEventPlayingSilence);
+    if (!bClose)
+    {
+        printf("close Handle failed: last error is %u\n", GetLastError());
+        return E_FAIL;
+    }
     return hr;
 }//END-FUNC
 /// <summary>
@@ -187,10 +198,10 @@ HRESULT ClsCoreAudio::PlaySilence()
 }//END-FUNC
 /// <summary>
 /// Static Function. Will be set in ClsSinkWriter::SetReadAudioBufferCallback(...) as a FunctionPointer.
-/// - This Functionpointer ClsSinkWriter::m_pReadAudioBufferwill be zipped in a struct 
+/// - This Functionpointer ClsSinkWriter::m_pReadAudioBuffer will be zipped in a struct 
 ///   called ClsSinkWriter::m_myDataForAudioThread
 /// - This Struct with the included FunctionPointer will be transmitted to a new Thread
-///   - The Thread is created in ClsSinkWriter::StartAudioHardwareBufferThread()
+///   - The Thread is created in ClsSinkWriter::StartReadAudioHWBufferThread()
 /// - The new Thread calls the Function ClsSinkWriter::AudioHardwareBufferThread
 ///   - The new Thread has now the Data of m_myDataForAudioThread
 ///   - This Struct includes the Functionspointer to ClsCoreAudio::ReadBuffer

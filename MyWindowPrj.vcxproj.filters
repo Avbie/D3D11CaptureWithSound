@@ -129,6 +129,9 @@
     <ClInclude Include="ClsFPSSync.h">
       <Filter>Headerdateien\FPSSync</Filter>
     </ClInclude>
+    <ClInclude Include="ClsCalcD3DWnd.h">
+      <Filter>Headerdateien\D3D11</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyWindowPrj.cpp">

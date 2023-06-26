@@ -6,7 +6,7 @@
 /// </summary>
 ClsSinkWriter::ClsSinkWriter()
 {
-    m_bFinished = false;
+   // m_bFinished = false;
     m_pSinkWriter.ReleaseAndGetAddressOf();
     m_pFrameData = NULL;
     // Video
@@ -40,7 +40,7 @@ ClsSinkWriter::ClsSinkWriter()
     // init. Microsoft Media foundation
     HR(MFStartup(MF_VERSION));
 
-    m_myDataForAudioThread.hEventReadAudioHWBuffer = CreateEvent(NULL, FALSE, FALSE, NULL);
+    //m_myDataForAudioThread.hEventReadAudioHWBuffer = CreateEvent(NULL, FALSE, FALSE, NULL);
     m_myDataForAudioThread.pAudioData = &m_pAudioData;
     m_myDataForAudioThread.uiAudioBytes = &m_uiAudioBytes;
     m_myDataForAudioThread.uiFPS = &m_uiFPS;
@@ -71,8 +71,8 @@ HRESULT ClsSinkWriter::LoopRecording()
 {
     HRESULT hr = NULL;
     unsigned char* pData = m_pFrameData->pData;
-    if (m_bFinished)
-        return S_OK;
+    //if (m_bFinished)
+    //    return S_OK;
     if (m_bIsAudio)
     {
         WaitForReadAudioHWBuffer();
@@ -91,6 +91,8 @@ HRESULT ClsSinkWriter::StartRecording()
 {
     HRESULT hr = NULL;
     UINT& uiPixelDataSize = m_pFrameData->uiPixelDataSize;
+
+    m_myDataForAudioThread.hEventReadAudioHWBuffer = CreateEvent(NULL, FALSE, FALSE, NULL);
     // Tell the sink writer to start accepting data.
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->BeginWriting());
     // Create a new memory buffer.
@@ -106,6 +108,7 @@ HRESULT ClsSinkWriter::StartRecording()
 /// <returns>HRESULT</returns>
 HRESULT ClsSinkWriter::StopRecording()
 {
+    BOOL bCloseHandle = false;
     HRESULT hr = NULL;
 
     if (m_bIsAudio)
@@ -113,16 +116,34 @@ HRESULT ClsSinkWriter::StopRecording()
         WaitForSingleObject(m_hThreadReadAudioHWBuffer, INFINITE);
         CoreAudio().FinishStream();
     }
-    m_bFinished = true;
+    //m_bFinished = true;
     //m_pSinkWriter->Flush(m_dwStreamIndexVidOut);
     //m_pSinkWriter->Flush(m_dwStreamIndexAudOut);
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->Finalize());
     SafeRelease(m_pBuffer.GetAddressOf());
     SafeRelease(m_pSinkWriter.GetAddressOf());
 
-    CloseHandle(m_hThreadReadAudioHWBuffer);
-    CloseHandle(m_myDataForAudioThread.hEventReadAudioHWBuffer);
+    bCloseHandle = CloseHandle(m_hThreadReadAudioHWBuffer);
+    if (!bCloseHandle)
+    {
+        printf("close Handle failed: last error is %u\n", GetLastError());
+        return E_FAIL;
+    }
+    else
+        m_hThreadReadAudioHWBuffer = NULL;
+    bCloseHandle = CloseHandle(m_myDataForAudioThread.hEventReadAudioHWBuffer);
+    if (!bCloseHandle)
+    {
+        printf("close Handle failed: last error is %u\n", GetLastError());
+        return E_FAIL;
+    }
+    else
+        m_myDataForAudioThread.hEventReadAudioHWBuffer = NULL;
 
+    m_lSampleTimeVid = 0;
+    m_lSampleTimeAud = 0;
+    //m_lDurationVid = 0;
+    //m_lDurationAud = 0;
     return hr;
 }//END-FUNC
 /// <summary>
@@ -229,9 +250,11 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
 /// Set the BitRate of the VideoFile for the Sinkwriter
 /// </summary>
 /// <param name="uiBitRate"></param>
-void ClsSinkWriter::SetBitRate(UINT32 uiBitRate)
+void ClsSinkWriter::SetBitRate()
 {
-    m_uiBitRate = uiBitRate;
+    //m_uiBitRate = uiBitRate;
+    m_uiBitRate = m_pFrameData->uiHeightDest * m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
+    m_dwDataRow = m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
 }//END-FUNC
 /// <summary>
 /// Sets the Bitreading method: Standard or Invert
@@ -278,8 +301,6 @@ void ClsSinkWriter::SetFormats(GUID MyInputFormat, GUID MyOutputFormat)
 void ClsSinkWriter::SetFrameData(FrameData** ppFrameData)
 {
     m_pFrameData = *ppFrameData;
-    m_uiBitRate = m_pFrameData->uiHeightDest * m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
-    m_dwDataRow = m_pFrameData->uiWidthDest * m_pFrameData->uiBpp;
 }//END-FUNC
 /*************************************/
 /// <summary>
@@ -413,6 +434,7 @@ void ClsSinkWriter::SetAudio(BOOL bAudio)
 }//END-FUNC
 /// <summary>
 /// Starts a seperate Thread for Listening and capturing the HardwareBuffer in Buffer-VectorArray
+/// CalledBy: ClsD3D11Recording::Loop()
 /// </summary>
 HRESULT ClsSinkWriter::StartReadAudioHWBufferThread()
 {
@@ -444,6 +466,7 @@ void ClsSinkWriter::SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE
 /// <summary>
 /// Wait Event for the HardwareBufferThread
 /// Waits until its finished
+/// CalledBy: ClsSinkWriter::LoopRecording()
 /// </summary>
 void ClsSinkWriter::WaitForReadAudioHWBuffer()
 {
@@ -497,6 +520,7 @@ HRESULT ClsSinkWriter::WriteAudioDataSample()
 /// <summary>
 /// - Static Function, called by the starting Thread m_hThreadReadAudioHWBuffer
 /// - Calls ClsCorAudio::ReadBuffer(...)
+/// CalledBy: ClsSinkWriter::StartReadAudioHWBufferThread()
 /// </summary>
 /// <param name="pParm"></param>
 /// <returns>always 0</returns>

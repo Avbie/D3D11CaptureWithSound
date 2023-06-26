@@ -14,7 +14,7 @@ namespace D3D
 		m_hWnd = NULL;
 		m_uiPickedMonitor = MAINMONITOR;
 		m_myClientRect = {};
-		m_myCpyMethod = DEFCPYMETHOD;
+		//m_myCpyMethod = DEFCPYMETHOD;
 		m_pFrameData = NULL;
 
 		// Device, Factory, SwapChain
@@ -28,6 +28,7 @@ namespace D3D
 		m_pDxgiSwapChain.ReleaseAndGetAddressOf();
 		m_pTarRenderView.ReleaseAndGetAddressOf();
 		m_pBackBuffer.ReleaseAndGetAddressOf();
+		
 
 		// Displaying Texture
 		m_pD3D11Texture.ReleaseAndGetAddressOf();
@@ -43,8 +44,8 @@ namespace D3D
 
 		// DesktopDupl
 		m_pDeskDupl.ReleaseAndGetAddressOf();
-		m_pDxgiDesktopResource.ReleaseAndGetAddressOf();
-		m_pD3dAcquiredDesktopImage.ReleaseAndGetAddressOf();
+		//m_pDxgiDesktopResource.ReleaseAndGetAddressOf();
+		//m_pD3dAcquiredDesktopImage.ReleaseAndGetAddressOf();
 		m_pD3D11TextureCPUAccess.ReleaseAndGetAddressOf();
 		m_myTextureDescCPUAccess = {};
 		m_MyFrameInfo = {};
@@ -56,17 +57,19 @@ namespace D3D
 		m_myConstantBuffer = {};
 	}
 	/*************************************Set-Get-Methodes*******************************************/
-	void ClsD3D11::SetClientRect(RECT myClientRect)
+	/*void ClsD3D11::SetClientRect(RECT myClientRect)
 	{
 		m_myClientRect = myClientRect;
-	}
-	void ClsD3D11::SetCpyMethod(CopyMethod& myCpyMethod)
+	}*/
+	/*void ClsD3D11::SetCpyMethod(CopyMethod& myCpyMethod)
 	{
 		m_myCpyMethod = myCpyMethod;
-	}
+	}*/
 	void ClsD3D11::SetFrameData(FrameData** ppFrameData)
 	{
 		m_pFrameData = *ppFrameData;
+		m_myClsCalcD3DWnd.SetFrameData(ppFrameData);
+
 	}
 	void ClsD3D11::SetPickedMonitor(UINT uiPickedMonitor)
 	{
@@ -75,6 +78,11 @@ namespace D3D
 	void ClsD3D11::SetWnd(HWND hWnd)
 	{
 		m_hWnd = hWnd;
+		m_myClsCalcD3DWnd.SetWnd(hWnd);
+	}
+	ClsCalcD3DWnd& ClsD3D11::GetCalcD3DWnd()
+	{
+		return m_myClsCalcD3DWnd;
 	}
 	/*************************************************************************************************
 	**************************************PUBLIC-METHODES*********************************************
@@ -88,7 +96,7 @@ namespace D3D
 	HRESULT ClsD3D11::BitBltDataToRT()
 	{
 		HRESULT hr = NULL;
-		switch (m_myCpyMethod)
+		switch (*m_pFrameData->pCpyMethod)
 		{
 		case CopyMethod::Mapping:
 			HR_RETURN_ON_ERR(hr, BitBltDataToD3D11SubResource());
@@ -159,6 +167,8 @@ namespace D3D
 		HR_RETURN_ON_ERR(hr, CreateVertexBuffer());
 		HR_RETURN_ON_ERR(hr, CreateIndexBuffer());
 		HR_RETURN_ON_ERR(hr, CreateConstantBuffer());
+
+		return hr;
 	}
 	/// <summary>
 	/// - Creates a D3D11Texture2D depending on the EnumType: Mapping, D2D1Surface, SubResource
@@ -194,7 +204,9 @@ namespace D3D
 		TextureDesc.Format = PFORMAT;									// Bildformat: Desktopdupl. ist immer BGRA
 		TextureDesc.SampleDesc.Count = 1;
 
-		switch (m_myCpyMethod)
+		SafeRelease(m_pD3D11Texture.GetAddressOf());
+
+		switch (*m_pFrameData->pCpyMethod)
 		{
 		case CopyMethod::D2D1Surface:
 
@@ -327,6 +339,7 @@ namespace D3D
 	{
 		HRESULT hr = NULL;
 
+		SafeRelease(m_pShaderView.GetAddressOf());
 		HR_RETURN_ON_ERR(hr,
 			m_pD3dDevice->CreateShaderResourceView(
 				m_pD3D11Texture.Get(),
@@ -349,6 +362,7 @@ namespace D3D
 	{
 		HRESULT hr = NULL;											// Rückgabewert von ApiFkt. für Errorhandling
 		//ComPtr<IDXGIDevice2> dxgiDevice;							// Smartpointer bzw Adresse zum COM-Factory-Interface-Obj
+		SafeRelease(m_pDxgiSwapChain.GetAddressOf());
 
 		DXGI_SWAP_CHAIN_DESC1 d3d11SwapChainDesc = {};				// typed Struct für die SwapchainDescription
 
@@ -358,13 +372,17 @@ namespace D3D
 		d3d11SwapChainDesc.SampleDesc.Count = 1;					// Kantenglättung. Wieviel Pixel für ein Pixel für Glättung: 1Px für ein Px = aus
 		d3d11SwapChainDesc.SampleDesc.Quality = 0;					// AntiAliasing bzw. Kantenglättung ist aus, folgt Quality 0
 		d3d11SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // Wie wird Buffer genutzt
-		d3d11SwapChainDesc.BufferCount = 1;							// 1 Backbuffer und 1 Frontbuffer
-		d3d11SwapChainDesc.Scaling = DXGI_SCALING_STRETCH;			// DXGI passt BackbufferGröße an Ziel an 
-		d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;//DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;// DXGI_SWAP_EFFECT_DISCARD;	// kopiert den Buffer mit jedem Call von device->Draw in den WindowDesktopManager
-																	// DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL shared mit WDM, jederzeit Zugriff ohne CopyOperation
+		d3d11SwapChainDesc.BufferCount = 2;							// 1 Backbuffer und 1 Frontbuffer
+		
+		//d3d11SwapChainDesc.Scaling = DXGI_SCALING_STRETCH;			// DXGI passt BackbufferGröße an Ziel an 
+		d3d11SwapChainDesc.Scaling = DXGI_SCALING_NONE;
+		//d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;//DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;// DXGI_SWAP_EFFECT_DISCARD;	// kopiert den Buffer mit jedem Call von device->Draw in den WindowDesktopManager
+		d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+		// DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL shared mit WDM, jederzeit Zugriff ohne CopyOperation
+		
 		d3d11SwapChainDesc.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED; // Alphakanal/Transparenz nicht definiert
-		d3d11SwapChainDesc.Flags = 0;								// z.B.: DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE erlaubt das GDI in DXI rendert		
-
+		d3d11SwapChainDesc.Flags =  0;								// z.B.: DXGI_SWAP_CHAIN_FLAG_GDI_COMPATIBLE erlaubt das GDI in DXI rendert		
+		
 		/*
 		* &ComPtr Adresse des ComPtr Obj selbst
 		* ComPtr.get() Adresse des Ziels vom IF-Pointer
@@ -380,7 +398,7 @@ namespace D3D
 															// per dxgiAdapter->EnumOutput(..)
 			&m_pDxgiSwapChain								// Speichert hier die Adresse des Ziels, was ein Pointer zum COM-IF-Obj ist
 		));
-
+		
 		return hr;
 	}//END-FUNC CreateSwapChain
 	/// <summary>
@@ -390,14 +408,18 @@ namespace D3D
 	HRESULT ClsD3D11::CreateSwapChainBuffer()
 	{
 		HRESULT hr = NULL;
+		SafeRelease(m_pBackBuffer.GetAddressOf());
+		SafeRelease(m_pTarRenderView.GetAddressOf());
+
 		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain
 			->GetBuffer(0, IID_PPV_ARGS(&m_pBackBuffer)));	// 1:param: 0 für BackBuffer, 2.: Adresse des BackBuffers in pBackBuffer speichern
-
+		
 		HR_RETURN_ON_ERR(hr, m_pD3dDevice->CreateRenderTargetView(		// Erstellt eine View auf Backbuffer, können nur Views an Pipeline binden
 															// View wird später per OMSetRenderTarget an OutputMerger-Stage gebunden
 			m_pBackBuffer.Get(),							// Wert des Pointers, also Adresse des IF-Pointers
 			0,												// Description für View, NULL wenn 1. Param kein Mipmap hat
 			&m_pTarRenderView));							// RenderTargetView ist an m_pBackBuffer gebunden
+		
 		return hr;
 	}//END-FUNC
 	/// <summary>
@@ -409,29 +431,97 @@ namespace D3D
 	/// Legt das RenderTarget fest. Meine RenderView die an den BackBuffer gebunden ist. 
 	/// BackBuffer ist an m_pD3D11Texture gebunden. Texture wird über DeskDupl oder per Mapping von GDI geupdatet
 	/// </summary>
-	HRESULT ClsD3D11::PreparePresentation()
+	HRESULT ClsD3D11::ReSizeD3D11Window()
 	{
 		HRESULT hr = S_OK;
+		//UINT uiWidth = 0;
+		//UINT uiHeight = 0;
 
+		//GetClientRect(m_hWnd, &m_myClientRect);
+		//uiWidth = m_myClientRect.right - m_myClientRect.left;
+		//uiHeight = m_myClientRect.bottom - m_myClientRect.top;
+		WndSizeHasChanged();
+		
+		if (m_pD3dContext)
+		{
+			/**********Input Assembler**********/
+			m_pD3dContext->IASetPrimitiveTopology(
+				D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);			// Legt interpretation der eingehenden Daten/Vertices fest: 
+																// Punkte, Linie, Linien, Dreicke, zusammenhängende Dreiecke etc.
+			if (*m_pFrameData->pCpyMethod == CopyMethod::DesktopDupl)
+				HR_RETURN_ON_ERR(hr, PrepareDesktopDuplToRAM());
+		}
+		return hr;
+	}//END-FUNC
+	/// <summary>
+	/// - Will be triggered by WM_SIZE MSG in ClsWnd::ProcessTriggeredMsg(...) 
+	///   ClsD3D11Recording::WndSizeHasChanged() will be called there and call this method.
+	/// - Resizing the Backbuffer that is strong binded to the WindowSize
+	/// - Resizing will also be triggered during the WindowCreationProcess
+	///   -> D3D11 is not init in that case, and it will skip the if-case
+	/// - it will NOT resize the D3D11Texture that is used in DesktopDupl for recording
+	/// </summary>
+	/// <param name="uiWidth">New Width</param>
+	/// <param name="uiHeight">New Height</param>
+	/// <returns>HRESULT</returns>
+	HRESULT ClsD3D11::WndSizeHasChanged()
+	{
+		HRESULT hr = NULL;
+		UINT uiValidWidth=0;
+		UINT uiValidHeight=0;
+		UINT uiNewTopX = 0;
+		UINT uiNewTopY = 0;
+		UINT uiWidth = 0;
+		UINT uiHeight = 0; 
 
-		// Bindet die View. Damit später der Rasterizer weiss wieviel max. dargestellt werden soll
-		D3D11_VIEWPORT myViewport = { 0.0f, 0.0f, (FLOAT)(m_myClientRect.right - m_myClientRect.left), (FLOAT)(m_myClientRect.bottom - m_myClientRect.top), 0.0f, 1.0f };
-		m_pD3dContext->RSSetViewports(1, &myViewport);			// Die Area wo Rasterizer zeichnet, genau definieren
-		/* Erstellt das sichtbare Bild aus:
-		* Vertexshader: Dargestellte Form (Übergabe an PixelShader)
-		* PixelShader: Sampler mit UV-Mapping. Mapped Texture auf dargestellte Form. (Übergabe an OutputMerger)
-		* Backbuffer/TargetRenderView: Hintergrund/ClearColor (direktes setzen im OutputMerger)
-		* DephstencilView: Bei 3D, welche Ebene ist weiter vorn und sichtbar und welche nicht (direktes setzen im OutputMerger)*/
-
-		/**********Input Assembler**********/
-		m_pD3dContext->IASetPrimitiveTopology(
-			D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);			// Legt interpretation der eingehenden Daten/Vertices fest: 
-															// Punkte, Linie, Linien, Dreicke, zusammenhängende Dreiecke etc.
-		m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
-
-		if (m_myCpyMethod == CopyMethod::DesktopDupl)
-			HR_RETURN_ON_ERR(hr, PrepareDesktopDuplToRAM());
-
+		if (m_pD3dContext && m_pDxgiSwapChain)
+		{
+			// Clear Pipeline with a zero-Array of RenderTargetView
+			m_pD3dContext->OMSetRenderTargets(0, NULL, NULL);
+			// have to reset the Buffer, that keeps the address of swapchains backbuffer
+			m_pBackBuffer.Reset();
+			// have to reset the RenderTargetView that was init. with m_pBackBuffer
+			m_pTarRenderView.Reset();
+			/* Sends the rest of the old Backbuffer from RAM to the GPU-VRAM
+			* We have to do it, or it wents crazy and old Buffer will be send to new GPU-side Buffersize*/
+			m_pD3dContext->Flush();
+			//myBufferDesc = mySwapChainDesc.BufferDesc;
+			//GetClientRect(m_hWnd, &m_myClientRect);
+			//uiWidth = m_myClientRect.right - m_myClientRect.left;
+			//uiHeight = m_myClientRect.bottom - m_myClientRect.top;
+			//CalcNewWndSize(uiWidth, uiHeight, &uiValidWidth, &uiValidHeight);
+			//CalcNewWndPos(uiValidWidth, uiValidHeight, uiWidth, uiHeight, &uiNewTopX, &uiNewTopY);
+			GetCalcD3DWnd().CalcPosAndSize();
+			// Das D3DFenster hat nach Berechnung des korrekten Seitenverhältnis eine kleinere Höhe als die Fensterhöhe.
+			// Bsp: D3DFenster 300, Fensterhöhe 500
+			// Um das D3DFenster im WinAPI-Fenster zu zentrieren benötigt man die obere linke Ecke. 
+			// Von da an wird das D3DFenster gezeichnet. 
+			// Berechnung: 500-300=200 (Ergebnis: oberer Rand + unterer Rand)
+			// Benötigen aber nur den oberen Rand: 200/2 = 100
+			// Problem: Laut D3DDef wird das D3DFenster immer bei Pos(0,0) gezeichnet
+			// Lösung: D3DFensterHöhe: oberer Rand + 300 = 400
+			// Im D3DFenster wird dann der Viewport ab Pos(0,100) gezeichnet
+			// Viewport zeichnet erst ab einer höhe von 100 abwärts
+			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->ResizeBuffers(
+				0,
+				GetCalcD3DWnd().GetD3DWndWidth(),// uiValidWidth + uiNewTopX,
+				GetCalcD3DWnd().GetD3DWndHeight(),//uiValidHeight+ uiNewTopY,
+				DXGI_FORMAT_UNKNOWN,
+				0));
+			// Recreate Buffer and RenderTargetView with new Width/Height included
+			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->
+				GetBuffer(0, IID_PPV_ARGS(&m_pBackBuffer)));// keeps the adress of Swapchains Backbuffer in m_pBackBuffer 
+			// Creates a View with the BackBuffer of the Swapchain
+			HR_RETURN_ON_ERR(hr, 
+				m_pD3dDevice->CreateRenderTargetView(
+					m_pBackBuffer.Get(), 
+					0, 
+					&m_pTarRenderView));
+			D3D11_VIEWPORT myViewport = GetCalcD3DWnd().GetD3DViewPort();// { (FLOAT)uiNewTopX, (FLOAT)uiNewTopY, (FLOAT)(uiValidWidth), (FLOAT)(uiValidHeight), 0.0f, 1.0f };
+			m_pD3dContext->RSSetViewports(1, &myViewport);			// Die Area wo Rasterizer zeichnet, genau definieren
+		
+			m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
+		}//END-IF valid Swapchain
 		return hr;
 	}//END-FUNC
 	/// <summary>
@@ -442,12 +532,13 @@ namespace D3D
 	HRESULT ClsD3D11::PresentTexture()
 	{
 		HRESULT hr = NULL;
+		//m_pD3dContext->ClearRenderTargetView(m_pTarRenderView->Get(), m_fClearColor);
+		m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
 		m_pD3dContext->DrawIndexed(							// verwenden Indices fürs zeichnen
 			(UINT)std::size(m_myIndexBuffer.iIndices),			// sizeof(iIndices/iIndices[0]); 12/2 = 6; 12Byte/2Byte (2Byte/16Bit = short int)
 			0,												// StartIndex
 			0												// IndexAddition: bevor mit jedem Index im VertexArray gesucht wird, wird zum Index 1 addiert
 		);
-
 		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->Present(
 			1,												/* Wie das fertige Bild in den FrontBuffer geladen wird:
 															Für die BitBlockÜbertragung DXGI_SWAP_EFFECT_DISCARD oder DXGI_SWAP_EFFECT_SEQUENTIAL
@@ -513,6 +604,59 @@ namespace D3D
 	/*************************************************************************************************
 	**************************************PRIVATE-METHODES********************************************
 	*************************************************************************************************/
+	/*
+	void ClsD3D11::CalcNewWndPos(UINT uiValidWidth, UINT uiValidHeight,UINT uiWidth, UINT uiHeight,UINT* uiTopX, UINT* uiTopY)
+	{
+		if (uiWidth > uiValidWidth)
+		{
+			*uiTopX = (uiWidth - uiValidWidth) / 2;
+		}
+		if (uiHeight > uiValidHeight)
+		{
+			*uiTopY = (uiHeight - uiValidHeight) / 2;
+		}
+	}
+	void ClsD3D11::CalcNewWndSize(UINT uiWndWidth, UINT uiWndHeight, UINT* uiNewWndWidth, UINT* uiNewWndHeight)
+	{
+		bool bWidth = false;
+		UINT uiSrcHeight = m_pFrameData->uiHeightSrc;
+		UINT uiSrcWidth = m_pFrameData->uiWidthSrc;
+		double dRatio = 0;
+
+
+		if (uiSrcHeight > uiSrcWidth)
+		{
+			dRatio = (double)uiSrcHeight / (double)uiSrcWidth;
+		}
+		else
+		{
+			dRatio = (double)uiSrcWidth / (double)uiSrcHeight;
+		}
+		// auf fenster runter skalieren
+		if (uiWndWidth <= uiSrcWidth && uiWndHeight <= uiSrcHeight)
+		{
+			*uiNewWndHeight = uiWndWidth * (UINT)(1 / dRatio);
+			*uiNewWndWidth = uiWndWidth;
+
+			if (*uiNewWndHeight > uiWndHeight)
+			{
+				*uiNewWndWidth = uiWndHeight * (UINT)dRatio;
+				*uiNewWndHeight = uiWndHeight;
+			}
+		}
+		else
+		{
+			*uiNewWndHeight = uiWndWidth * (1 / dRatio);
+			*uiNewWndWidth = uiWndWidth;
+
+			if (*uiNewWndHeight > uiWndHeight)
+			{
+				*uiNewWndWidth = uiWndHeight * dRatio;
+				*uiNewWndHeight = uiWndHeight;
+			}
+
+		}
+	}*/
 	/// <summary>
 	/// Erstellung des ConstantBuffers: 
 	/// - Erstellen einer Matrix
@@ -759,13 +903,13 @@ namespace D3D
 	///   - wird nicht zur Anzeige benötigt (geht alles über GPU)
 	/// CalledBy: GetDesktopDuplByGPU()
 	/// </summary>
-	HRESULT ClsD3D11::DesktopDuplToRAM()
+	HRESULT ClsD3D11::DesktopDuplToRAM(ComPtr<ID3D11Texture2D> pD3dAcquiredDesktopImage)
 	{
 		HRESULT hr = NULL;
 		UINT& uiPixelDataSize = m_pFrameData->uiPixelDataSize;
 		unsigned char* pData = m_pFrameData->pData;
 
-		m_pD3dContext->CopyResource(m_pD3D11TextureCPUAccess.Get(), m_pD3dAcquiredDesktopImage.Get());// Kopieren der Bilddaten auf Texture mit CPU Read Access
+		m_pD3dContext->CopyResource(m_pD3D11TextureCPUAccess.Get(), pD3dAcquiredDesktopImage.Get());// Kopieren der Bilddaten auf Texture mit CPU Read Access
 
 		// Subressource, erlaubt Zugriff auf Bilddaten
 		memset(&m_mySubResD3D11Texture, 0, sizeof(D3D11_MAPPED_SUBRESOURCE));
@@ -796,19 +940,33 @@ namespace D3D
 	HRESULT ClsD3D11::GetDesktopDuplByGPU()
 	{
 		HRESULT hr = NULL;
+		ComPtr<IDXGIResource> pDxgiDesktopResource;				// Container for PixelData of the Output
+		ComPtr<ID3D11Texture2D> pD3dAcquiredDesktopImage;		// Resource will be casted to this Texture
+
+
 		// AcquireNextFrame returns a CPU inaccessible IDXGIResource, so we need to make a copy.
-		HR_RETURN_ON_ERR(hr, m_pDeskDupl->AcquireNextFrame(
-			500,												// Framegültigkeit in ms. Muss noch beim nächsten Durchlauf verfügbar sein
-			&m_MyFrameInfo,										// MouseCurserInformationen 
-																// letzte Aktualisierung des DesktopFrames seitens DWM
-			&m_pDxgiDesktopResource));							// Container für ImgDaten
+
+		HRESULT hrr = E_HANDLE;
+
+		//while (FAILED(hrr))
+		//{
+		hr= m_pDeskDupl->AcquireNextFrame(
+				0,												// Framegültigkeit in ms. Muss noch beim nächsten Durchlauf verfügbar sein
+				&m_MyFrameInfo,										// MouseCurserInformationen 
+																	// letzte Aktualisierung des DesktopFrames seitens DWM
+				&pDxgiDesktopResource);							// Container für ImgDaten
+		//}
+
+		if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+			return S_OK;
+		m_MyFrameInfo.AccumulatedFrames;
 		// LowLvl (Hardwarenah) zu HighLvl
-		HR_RETURN_ON_ERR(hr, m_pDxgiDesktopResource->QueryInterface(
-			IID_PPV_ARGS(&m_pD3dAcquiredDesktopImage)));
+		HR_RETURN_ON_ERR(hr, pDxgiDesktopResource->QueryInterface(
+			IID_PPV_ARGS(&pD3dAcquiredDesktopImage)));
 		// Überschreibung meiner D3D11Texture mit DesktopD3D11Texture
-		m_pD3dContext->CopyResource(m_pD3D11Texture.Get(), m_pD3dAcquiredDesktopImage.Get());
-		HR_RETURN_ON_ERR(hr, DesktopDuplToRAM()); // für Sinkwriter
-		HR_RETURN_ON_ERR(hr, m_pDeskDupl->ReleaseFrame());				// Frame wieder freigeben, Abfrage beendet
+		m_pD3dContext->CopyResource(m_pD3D11Texture.Get(), pD3dAcquiredDesktopImage.Get());
+		HR_RETURN_ON_ERR(hr, DesktopDuplToRAM(pD3dAcquiredDesktopImage));// für Sinkwriter
+		HR_RETURN_ON_ERR(hr, m_pDeskDupl->ReleaseFrame());		// Frame wieder freigeben, Abfrage beendet
 
 		return hr;
 	}//END-FUNC
@@ -860,11 +1018,15 @@ namespace D3D
 																// Create: Interface*ptr; MyIFPtr = new IF2; 
 		if (!pDxgiOutput1)
 			return 0;
-
+		
+		SafeRelease(m_pDeskDupl.GetAddressOf());
 		HR_RETURN_ON_ERR(hr, pDxgiOutput1->DuplicateOutput(		// Creates a complete Duplication of a Output/Monitor 
 			m_pD3dDevice.Get(),
 			&m_pDeskDupl));										// pDeskDupl beinhalted Zugriff auf Frames etc.
-		//m_pDeskDupl->GetDesc(&m_MyOutputDuplDesc);				// Description des Monitors wie Auflösung etc.
+		//DXGI_OUTDUPL_DESC pp = {};
+
+		//m_pDeskDupl->GetDesc(&pp);				// Description des Monitors wie Auflösung etc.
+
 
 		return hr;
 	}//END-FUNC
@@ -880,6 +1042,7 @@ namespace D3D
 		UINT& uiHeightDest = m_pFrameData->uiHeightDest;
 		UINT& uiWidthDest = m_pFrameData->uiWidthDest;
 
+		SafeRelease(m_pD3D11TextureCPUAccess.GetAddressOf());
 		m_myTextureDescCPUAccess.Width = uiWidthDest;								// Width
 		m_myTextureDescCPUAccess.Height = uiHeightDest;								// Height
 		m_myTextureDescCPUAccess.MipLevels = 1;										// MipLvl 0/1 = aus
