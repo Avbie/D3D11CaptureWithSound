@@ -1,5 +1,51 @@
 #include "ClsSilence.h"
+#include "Functiondiscoverykeys_devpkey.h"
 
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+using namespace std;
+
+/// <summary>
+/// Collects all active sound devices in a vector array.
+/// Not used yet.
+/// </summary>
+/// <param name="pEnumerator">Device enumerator</param>
+void ClsSilence::DeviceCollection(ComPtr<IMMDeviceEnumerator> pEnumerator)
+{
+    UINT uiCountDevice = 0;
+    ComPtr< IMMDeviceCollection> pDeviceCollection = NULL;
+    ComPtr<IPropertyStore> pProps = NULL;
+
+    struct DeviceInfo
+    {
+        ComPtr<IMMDevice> myDevice;
+        PROPVARIANT varName;
+        DeviceInfo()
+        {
+            myDevice.ReleaseAndGetAddressOf();
+            varName = {};
+        }
+    };
+    vector<DeviceInfo> vDevices;
+
+    pEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &pDeviceCollection);
+
+    pDeviceCollection->GetCount(&uiCountDevice);
+    vDevices.resize(uiCountDevice);
+
+    for (UINT i = 0; i < uiCountDevice; i++)
+    {
+        auto &myDevice = vDevices.at(i).myDevice;
+        auto &myDeviceName = vDevices.at(i).varName;
+        pDeviceCollection->Item(i, myDevice.GetAddressOf());
+        myDevice->OpenPropertyStore(STGM_READ, &pProps);
+        if (pProps)
+        {
+            pProps->GetValue(PKEY_Device_FriendlyName, &myDeviceName);
+        }//END-IF Property per Device
+    }//END-FOR DeviceCount
+}//END-FUNC
 /// <summary>
 /// Creates AudioEndpointDevice
 /// Creates an AudioClient and AudioRenderClient for the Stream
@@ -27,6 +73,10 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
     ComPtr<IMMDeviceEnumerator> pEnumerator = NULL;
     ComPtr<IAudioRenderClient> pRenderClient = NULL;
 
+    // Initialize container for property value.
+    //PropVariantInit(&varName);
+
+
     Events* pStruMyEvents;
     pStruMyEvents = (Events*)lParm;                             // Struct of the MainThread
 
@@ -38,6 +88,9 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
             IID_PPV_ARGS(&pEnumerator)));
             //IID_IMMDeviceEnumerator,                    
             //(void**)&pEnumerator));
+    
+    
+    //DeviceCollection(pEnumerator);
 
     HR_RETURN_ON_ERR(hr,
         pEnumerator->GetDefaultAudioEndpoint(
@@ -125,6 +178,8 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
     Sleep((DWORD)(lDuration / 10 / 2));
     HR_RETURN_ON_ERR(hr, pAudioClient->Stop());
     CoTaskMemFree(pWaveFormat);
+
+    return hr;
 }//END-FUNC
 
 /// <summary>

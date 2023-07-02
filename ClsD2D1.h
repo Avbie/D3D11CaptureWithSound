@@ -1,6 +1,12 @@
 #pragma once
 //#include "ClsDataContainer.h"
 #include "framework.h"
+#include "FrameData.h"
+
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+
 namespace D3D
 {
 	class ClsD2D1

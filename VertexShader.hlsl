@@ -13,7 +13,10 @@ struct VS_Output
     float2 uv : TEXCOORD;
     float4 col : COL;
 };
-
+// b = constant buffer
+// t = Textur buffer
+// s = sampler
+// 0 = erste Variable, hier erste Matrix
 cbuffer CBuf : register(b0)
 {
     matrix transform;
@@ -25,8 +28,8 @@ cbuffer CBuf : register(b0)
 VS_Output main(VS_Input input)
 {
     VS_Output output; // Output is Input for the Next Stage
-   // output.pos = mul(float4(input.pos, 0.0f, 1.0f),transform); // input.pos has x,y coord. 
-    output.pos = float4(input.pos, 0.0f, 1.0f);
+    output.pos = mul(float4(input.pos, 0.0f, 1.0f),transform); // input.pos has x,y coord. 
+    //output.pos = float4(input.pos, 0.0f, 1.0f);
                                                 // 3. 0.0f = z coord, 4. for Transformation
     output.uv = input.uv; // u = horizental, v = vertical(senkrecht)
     output.col = input.col;

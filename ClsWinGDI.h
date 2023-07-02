@@ -1,5 +1,6 @@
 #pragma once
 #include "framework.h"
+//#include "FrameData.h"
 #include "ClsWndHandle.h"
 #include "ClsScreenshot.h"
 

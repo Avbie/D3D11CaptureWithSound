@@ -1,5 +1,7 @@
 #include "ClsWinGDI.h"
 
+using namespace std;
+
 namespace GDI
 {
 	/// <summary>
@@ -38,6 +40,7 @@ namespace GDI
 	{
 		m_pFrameData = *ppFrameData;
 		ScreenShot().SetFrameData(ppFrameData);
+		//m_pFrameData->pClsWndHandle = &m_MyClsWndHandle;
 	}//END-FUNC
 	void ClsWinGDI::SetSrcWndTitle(const char* strTitle)
 	{
@@ -59,7 +62,7 @@ namespace GDI
 	HRESULT ClsWinGDI::FindSetWindow()
 	{
 		HRESULT hr = NULL;
-		RECT WindowSrcRect = {};							// RECT for ResolutionInfo
+		RECT myClientRectSrcWnd = {};							// RECT for ResolutionInfo
 
 		ClearObjects();
 
@@ -113,9 +116,9 @@ namespace GDI
 			HR_RETURN_ON_ERR(hr, AllocateMemDC());			// compatible MemDC with a HBitmap that has the specific destination size
 
 			HR_RETURN_ON_INT_ERR(GetClientRect(
-				m_MyClsWndHandle.GetHandle(), &WindowSrcRect));	// keep the size of the window
-			m_pFrameData->uiWidthSrc = WindowSrcRect.right - WindowSrcRect.left;
-			m_pFrameData->uiHeightSrc = WindowSrcRect.bottom - WindowSrcRect.top;
+				m_MyClsWndHandle.GetHandle(), &myClientRectSrcWnd));	// keep the size of the window
+			m_pFrameData->uiWidthSrc = myClientRectSrcWnd.right - myClientRectSrcWnd.left;
+			m_pFrameData->uiHeightSrc = myClientRectSrcWnd.bottom - myClientRectSrcWnd.top;
 			m_pFrameData->uiTop = 0;
 			m_pFrameData->uiLeft = 0;
 		}//END-IF Wnd-Handle
@@ -341,7 +344,7 @@ namespace GDI
 		{
 			HR_RETURN_ON_INT_ERR(GetClientRect(
 			m_MyClsWndHandle.GetHandle(), &WindowSrcRect));	// Auflösung des Fensters
-			m_pFrameData->pClsWndHandle = &m_MyClsWndHandle;
+			//m_pFrameData->pClsWndHandle = &m_MyClsWndHandle;
 			m_pFrameData->uiWidthSrc =  WindowSrcRect.right - WindowSrcRect.left;			// Breite
 			m_pFrameData->uiHeightSrc = WindowSrcRect.bottom - WindowSrcRect.top;
 		}//END-IF valid Wnd-Title (Window for recording)

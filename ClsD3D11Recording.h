@@ -1,5 +1,6 @@
 #pragma once
 #include "framework.h"
+//#include "FrameData.h"
 #include "ClsSinkWriter.h"
 #include "ClsWinGDI.h"
 #include "ClsD3D11.h"
@@ -110,8 +111,6 @@ public:
 	friend class ClsWnd;
 	
 private:
-	BOOL m_bIsAudio;
-	BOOL m_bIsRecording;
 	HWND m_hWnd;
 	static UINT m_uiMaxMonitors;
 	UINT m_uiPickedMonitor;
@@ -124,10 +123,8 @@ private:
 	RECT m_myWndRect;
 	PicDataBitReading m_myBitReading;
 	VideoDescriptor* m_pVidDesc;
-	//CopyMethod m_myCpyMethod;
 	FrameData* m_pFrameData;
 	std::vector<MonitorInfo*> m_vMonitors;
-	//ClsWndHandle m_MyClsWndHandle;
 
 private:
 	D3D::ClsD3D11 m_myClsD3D11;
@@ -138,21 +135,24 @@ public:
 	ClsD3D11Recording(VideoDescriptor* pVidDesc);
 	~ClsD3D11Recording();
 
+	void AdjustRatio();
 	void Finalize();
-	BOOL GetRecordingStatus();
 	void Init3DWindow();
 	void Loop();
 	void PrepareRecording();
+	void SetAudio(BOOL bAudio);
+	void SetFPS(UINT uiFPS);
 	void SetRecordingStatus(BOOL bRecord);
 	void SetWndAsSrc();
 	void SetMonitorAsSrc(UINT uiMonitorID);
-	void ResizeWindow();
+	void ZoomInOrOut(float fPercentage);
+	BOOL IsRecording();
 private:
 	D3D::ClsD3D11& D3D11();
 	ClsSinkWriter& SinkWriter();
 	ClsFPSSync& SyncFPS();
 	GDI::ClsWinGDI& WinGDI();
-
+	
 	void SetCpyMethod(CopyMethod* myCpyMethod);
 	void SetDestResolution(UINT uiWidthDest, UINT uiHeightDest);
 	void SetHWND(HWND hWnd);

@@ -1,5 +1,6 @@
 #pragma once
 #include "framework.h"
+#include "FrameData.h"
 #include "ClsCoreAudio.h"
 
 /// <summary>
@@ -10,8 +11,8 @@ struct DataForAudioThread
     BYTE** pAudioData;
     UINT* uiAudioBytes;
     UINT* uiFPS;
-    HRESULT(**pReadAudioBuffer)(BYTE**, UINT*, UINT* uiFPS);
-    HANDLE hEventReadAudioHWBuffer;
+    HRESULT(**ppReadAudioBuffer)(BYTE**, UINT*, UINT* uiFPS);
+    //HANDLE hEventReadAudioHWBuffer;
 };
 
 class ClsSinkWriter
@@ -25,7 +26,7 @@ private:
     DWORD m_dwDataRow;                              // Width*Bpp
     DWORD m_dwStreamIndexVidOut;                    // VideoSpur
     UINT32 m_uiBitRate;                             // Height*Width*Bpp
-    UINT32 m_uiFPS;                                 // FPS Limit
+    //UINT32 m_uiFPS;                                 // FPS Limit
     LONGLONG m_lDurationVid;                        // In 100NanoSecondsUnits how long one Frame will be displayed. Depending on FrameRate
     LONGLONG m_lSampleTimeVid;                      // Sum of m_lDurationVid, identify the Position of each Frame
     WCHAR m_wstrFilename[MAXSIZE] = L"";            // VideoFileName as wChar
@@ -37,7 +38,7 @@ private:
     ComPtr <IMFSample> m_pSample;                   // IMF-Sample, builded with m_pBuffer Data
     
     // Audio
-    BOOL m_bIsAudio;
+    //BOOL m_bIsAudio;
     HANDLE m_hThreadReadAudioHWBuffer;
     DWORD m_dwStreamIndexAudOut;                    // AudioSpur ( e.g. German, English etc.)
     UINT32 m_uiAudioBytes;
@@ -65,18 +66,19 @@ public:
     void SetBitRate();
     void SetBitReading(PicDataBitReading myBitReading);     // Sets Type of PixelData Interpretation (Bmp: Last to First Line)
     void SetFileName(const char* strFileName);
-    void SetFPS(UINT32 uiFPS);
+    //void SetFPS(UINT32 uiFPS);
+    void CalcDurationVid();
     void SetFormats(GUID MyInputFormat, GUID MyOutputFormat);
     void SetFrameData(FrameData** pFrameData);              // FrameFormat Information Structure
     LONGLONG GetVideoFrameDuration();
 private:
-    void CalcDurationVid();
+    
     void FlipFormat(DWORD& dwDataRow, unsigned char* pFrameBuffer, BYTE** pPosition);
     HRESULT WriteVideoDataSample(unsigned char* pFrameBuffer);
     /*********Audio*******************/
 public:
     void PrepareAudio();
-    void SetAudio(BOOL bAudio);
+    //void SetAudio(BOOL bAudio);
     HRESULT StartReadAudioHWBufferThread();
 private:
     void SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*, UINT*));

@@ -4,7 +4,7 @@
 
 #pragma once
 
-using namespace std;
+//using namespace std;
 
 //#include "targetver.h"
 #include "dxerr.h"
@@ -23,47 +23,16 @@ using namespace std;
 enum class CopyMethod { Mapping, D2D1Surface, SubResource, DesktopDupl };
 enum class PicDataBitReading { Invert, Standard };
 
+//#include "ClsWndHandle.h"
 //forward declaration
-namespace GDI
-{
-	class ClsWndHandle;
-}
+//namespace GDI
+//{
+//	class ClsWndHandle;
+//}
 /// <summary>
 /// Container for transfering Data into Subclasses of the Superclass
 /// </summary>
-struct FrameData
-{
-public:
-	FrameData()
-	{
-		bWndAsSrc = FALSE;
-		uiBpp = 0;
-		uiHeightDest = 0; // Target Res for Sinkwriter e.g. 2560x1440
-		uiWidthDest = 0;
-		uiHeightSrc = 0;	// SourceResolution of the Source e.g. Monitor 1920x1080
-		uiWidthSrc = 0;
-		uiPixelDataSize = 0;
-		uiTop = 0;			// Window using virtual Monitor System 2. Monitor e.g. Mon1Width + Mon2Width
-		uiLeft = 0;
-		pCpyMethod = NULL;
-		pClsWndHandle = NULL;
-		pData = NULL;
-		
-	}
-public:
-	BOOL bWndAsSrc;
-	UINT uiBpp;
-	UINT uiHeightDest; // Target Res for Sinkwriter e.g. 2560x1440
-	UINT uiWidthDest;
-	UINT uiHeightSrc;	// SourceResolution of the Source e.g. Monitor 1920x1080
-	UINT uiWidthSrc;
-	UINT uiPixelDataSize;
-	UINT uiTop;			// Window using virtual Monitor System 2. Monitor e.g. Mon1Width + Mon2Width
-	UINT uiLeft;
-	CopyMethod* pCpyMethod;
-	GDI::ClsWndHandle* pClsWndHandle;
-	unsigned char* pData;
-};
+
 
 template <class T>
 void SafeRelease(T** ppT)
@@ -83,13 +52,15 @@ void SafeRelease(T** ppT)
 *  Zuweisung von exp an hrTemp
 *  Wenn hrTemp < 0 dann ERROR -> akt. Funktion wird mit HRESULT beendet
 */
+
+#define WINSTYLE WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX
 #define NODESKDUPL 1
 #define SETWND 3
 #define WNDTITLESET 7
 #define WNDFOUND 15
 
 // Default Audio HardwareBuffer
-#define DEFAUDIOHWBUFFERSIZE 300000 
+#define DEFAUDIOHWBUFFERSIZE 500000 
 // Default Resolution
 #define DEFWIDTH 2560
 #define DEFHEIGHT 1440
@@ -196,6 +167,6 @@ void SafeRelease(T** ppT)
 #include "WICTextureLoader.h"
 #include "ClsTimer.h"
 
-using namespace Microsoft::WRL;
-using namespace ABI::Windows::Foundation;
-using Microsoft::WRL::ComPtr;
+//using namespace Microsoft::WRL;
+//using namespace ABI::Windows::Foundation;
+//using Microsoft::WRL::ComPtr;

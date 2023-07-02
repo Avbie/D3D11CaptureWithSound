@@ -129,7 +129,10 @@
     <ClInclude Include="ClsFPSSync.h">
       <Filter>Headerdateien\FPSSync</Filter>
     </ClInclude>
-    <ClInclude Include="ClsCalcD3DWnd.h">
+    <ClInclude Include="FrameData.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsCalcViewPort.h">
       <Filter>Headerdateien\D3D11</Filter>
     </ClInclude>
   </ItemGroup>
@@ -178,6 +181,9 @@
     </ClCompile>
     <ClCompile Include="ClsFPSSync.cpp">
       <Filter>Quelldateien\FPSSync</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsCalcViewPort.cpp">
+      <Filter>Quelldateien\WinGDI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

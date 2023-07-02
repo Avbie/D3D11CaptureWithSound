@@ -1,5 +1,9 @@
 #include "ClsD2D1.h"
 
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+
 namespace D3D
 {
 	/// <summary>
@@ -41,8 +45,8 @@ namespace D3D
 		MyD2D1RTProperties = D2D1::RenderTargetProperties(
 			D2D1_RENDER_TARGET_TYPE_DEFAULT,
 			D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE),
-			m_uiDPI,
-			m_uiDPI);
+			(FLOAT)m_uiDPI,
+			(FLOAT)m_uiDPI);
 		// Create a d2d1 Factory
 		HR_RETURN_ON_ERR(hr, D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_PPV_ARGS(&m_pD2dFactory)));
 		// Creates the dxgiSurface from the D3D11Texture, 
@@ -77,12 +81,12 @@ namespace D3D
 		unsigned char* pData = m_pFrameData->pData;
 
 		m_MyBitmapFormat = D2D1::RectU(0, 0, uiWidthDest, uiHeightDest); // the Rectangle that will be copied from pData to m_pD2dBitmap
-		m_MyRTFormat = D2D1::RectF(0, 0, uiWidthDest, uiHeightDest); // the Rectangle that will be shown in the m_pD2dRenderTarget
+		m_MyRTFormat = D2D1::RectF(0, 0, (FLOAT)uiWidthDest, (FLOAT)uiHeightDest); // the Rectangle that will be shown in the m_pD2dRenderTarget
 		//unsigned char* pData = m_pData;
 		MyBitmapSize = D2D1::SizeU(uiWidthDest, uiHeightDest); // Size of the Bitmap
 		m_uiPitch = uiWidthDest * uiBpp;	// Row in Bytes
 		MyPixelFormat = D2D1::PixelFormat(DXGI_FORMAT_B8G8R8A8_UNORM, D2D1_ALPHA_MODE_IGNORE);
-		MyBitmapProperty = D2D1::BitmapProperties(MyPixelFormat, m_uiDPI, m_uiDPI);
+		MyBitmapProperty = D2D1::BitmapProperties(MyPixelFormat, (FLOAT)m_uiDPI, (FLOAT)m_uiDPI);
 
 		if (!m_pD2dBitmap)
 			HR_RETURN_ON_ERR(hr, m_pD2dRenderTarget->CreateBitmap(MyBitmapSize, pData, m_uiPitch, &MyBitmapProperty, &m_pD2dBitmap));

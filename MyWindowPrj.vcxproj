@@ -147,7 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ClsCalcD3DWnd.h" />
+    <ClInclude Include="ClsCalcViewPort.h" />
     <ClInclude Include="ClsCoreAudio.h" />
     <ClInclude Include="ClsD2D1.h" />
     <ClInclude Include="ClsD3D11Recording.h" />
@@ -164,12 +164,14 @@
     <ClInclude Include="ClsWndProc.h" />
     <ClInclude Include="D3DBuffer.h" />
     <ClInclude Include="dxerr.h" />
+    <ClInclude Include="FrameData.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MyWindowPrj.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ClsCalcViewPort.cpp" />
     <ClCompile Include="ClsD3D11Recording.cpp" />
     <ClCompile Include="ClsFPSSync.cpp" />
     <ClCompile Include="ClsWinGDI.cpp" />

@@ -54,7 +54,6 @@ LRESULT ClsWndProc::MsgProcSetup(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM lP
 		ClsWnd* pClsWnd = (ClsWnd*)pCreateStruct->lpCreateParams;
 		SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)pClsWnd);
 		SetWindowLongPtr(hWnd, GWLP_WNDPROC, (LONG_PTR)ClsWndProc::MsgProcRun);
-
 		//return pClsWnd
 	}
 	return DefWindowProc(hWnd, uiMsg, wParam, lParam);

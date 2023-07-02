@@ -1,5 +1,9 @@
 #include "ClsD3D11.h"
 
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+
 namespace D3D
 {
 	/// <summary>
@@ -8,13 +12,10 @@ namespace D3D
 	/// Erhält das WndHandle
 	/// Mit ReleaseAndGetAdressOf() werden die Variablen auf NULL gesetzt
 	/// </summary>
-	/// <param name="pClsDataContainer">Container der alle notwendigen Daten für Fenster enthält</param>
 	ClsD3D11::ClsD3D11()
 	{
 		m_hWnd = NULL;
-		m_uiPickedMonitor = MAINMONITOR;
-		m_myClientRect = {};
-		//m_myCpyMethod = DEFCPYMETHOD;
+		//m_myClientRect = {};
 		m_pFrameData = NULL;
 
 		// Device, Factory, SwapChain
@@ -43,54 +44,160 @@ namespace D3D
 		m_myIndexBuffer = {};
 
 		// DesktopDupl
-		m_pDeskDupl.ReleaseAndGetAddressOf();
-		//m_pDxgiDesktopResource.ReleaseAndGetAddressOf();
-		//m_pD3dAcquiredDesktopImage.ReleaseAndGetAddressOf();
-		m_pD3D11TextureCPUAccess.ReleaseAndGetAddressOf();
-		m_myTextureDescCPUAccess = {};
-		m_MyFrameInfo = {};
+		m_myFrameInfo = {};
 		m_mySubResD3D11Texture = {};
+		m_myTextureDescCPUAccess = {};
+		m_pDeskDupl.ReleaseAndGetAddressOf();
+		m_pD3D11TextureCPUAccess.ReleaseAndGetAddressOf();
 		
 		// D2D1 Interface
 		m_pClsD2D1 = NULL;
 
+		// Constant Buffer
 		m_myConstantBuffer = {};
-	}
+		m_myConstantBuffer.myConstantBuffer =
+		{
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+	}//END-CONST
+	/// <summary>
+	/// Destructor
+	/// </summary>
+	ClsD3D11::~ClsD3D11()
+	{
+		if (m_pClsD2D1)
+		{
+			delete m_pClsD2D1;
+			m_pClsD2D1 = nullptr;
+		}
+	}//END-CONS
 	/*************************************Set-Get-Methodes*******************************************/
-	/*void ClsD3D11::SetClientRect(RECT myClientRect)
-	{
-		m_myClientRect = myClientRect;
-	}*/
-	/*void ClsD3D11::SetCpyMethod(CopyMethod& myCpyMethod)
-	{
-		m_myCpyMethod = myCpyMethod;
-	}*/
 	void ClsD3D11::SetFrameData(FrameData** ppFrameData)
 	{
 		m_pFrameData = *ppFrameData;
-		m_myClsCalcD3DWnd.SetFrameData(ppFrameData);
+		m_myClsCalcViewPort.SetFrameData(ppFrameData);
 
-	}
-	void ClsD3D11::SetPickedMonitor(UINT uiPickedMonitor)
-	{
-		m_uiPickedMonitor = uiPickedMonitor;
 	}
 	void ClsD3D11::SetWnd(HWND hWnd)
 	{
 		m_hWnd = hWnd;
-		m_myClsCalcD3DWnd.SetWnd(hWnd);
+		m_myClsCalcViewPort.SetWnd(hWnd);
 	}
-	ClsCalcD3DWnd& ClsD3D11::GetCalcD3DWnd()
+	ClsCalcViewPort& ClsD3D11::GetClsCalcViewPort()
 	{
-		return m_myClsCalcD3DWnd;
+		return m_myClsCalcViewPort;
 	}
 	/*************************************************************************************************
 	**************************************PUBLIC-METHODES*********************************************
 	*************************************************************************************************/
 	/// <summary>
+	/// Festlegen wie das fertige Bild im Frontbuffer angezeigt werden soll
+	/// Passt das Bild für das ZielFenster an: myViewport
+	/// Stages: Vertexshader->Rasterizer->Pixelshader->OutputMerger
+	/// Setzt Topology für mein 3D-Umgebung. Diese ist nur ein 2D-Quad das aufs voll Fenster gestreckt wird
+	///		- 2 Dreiecke die ein Quad ergeben
+	/// Legt das RenderTarget fest. Meine RenderView die an den BackBuffer gebunden ist. 
+	/// BackBuffer ist an m_pD3D11Texture gebunden. Texture wird über DeskDupl oder per Mapping von GDI geupdatet
+	/// CalledBy:	ClsD3D11Recording::Init3DWindow()
+	///				ClsD3D11Recording::PrepareRecording()
+	///				ClsD3D11Recording::SetWndAsSrc()
+	///				ClsD3D11Recording::SetMonitorAsSrc(...)	
+	/// </summary>
+	HRESULT ClsD3D11::AdjustD3D11Ratio()
+	{
+		HRESULT hr = NULL;
+		RECT myAppWnd = {};
+		D3D11_VIEWPORT myViewPort = {};
+
+		if (m_pD3dContext && m_pDxgiSwapChain)
+		{
+			// Clear Pipeline with a zero-Array of RenderTargetView
+			m_pD3dContext->ClearRenderTargetView(m_pTarRenderView.Get(), m_fClearColor);
+			m_pD3dContext->OMSetRenderTargets(0, NULL, NULL);
+			// have to reset the buffer that keeps the address of swapchains backbuffer
+			m_pBackBuffer.Reset();
+			// have to reset the RenderTargetView that was init. with m_pBackBuffer
+			m_pTarRenderView.Reset();
+			/* Sends the rest of the old Backbuffer from RAM to the GPU-VRAM
+			* We have to do it, or old Buffer will be send to new GPU Buffersize*/
+			m_pD3dContext->Flush();
+			GetClsCalcViewPort().CalcViewPortSizeAndPos();
+			GetClientRect(m_hWnd, &myAppWnd);
+			/*
+			* wndhöhe   = oberer rand + viewport  höhe + unterer rand
+			* wndbreite = linker rand + viewportbreite + rechter rand
+			*/
+			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->ResizeBuffers(
+				0,
+				myAppWnd.right - myAppWnd.left,
+				myAppWnd.bottom - myAppWnd.top,
+				DXGI_FORMAT_UNKNOWN,
+				0));
+			// Recreate Buffer and RenderTargetView with new Width/Height included
+			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->
+				GetBuffer(0, IID_PPV_ARGS(&m_pBackBuffer)));// keeps the adress of Swapchains Backbuffer in m_pBackBuffer 
+			// Creates a View with the BackBuffer of the Swapchain
+			HR_RETURN_ON_ERR(hr,
+				m_pD3dDevice->CreateRenderTargetView(
+					m_pBackBuffer.Get(),
+					0,
+					&m_pTarRenderView));
+			// Die Area wo Rasterizer zeichnet, genau definieren
+			myViewPort = GetClsCalcViewPort().GetViewPort();
+			m_pD3dContext->RSSetViewports(1, &myViewPort);
+
+			m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
+			/**********Input Assembler**********/
+			m_pD3dContext->IASetPrimitiveTopology(
+				D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);			// Legt interpretation der eingehenden Daten/Vertices fest: 
+																// Punkte, Linie, Linien, Dreicke, zusammenhängende Dreiecke etc.
+			if (*m_pFrameData->pCpyMethod == CopyMethod::DesktopDupl)
+				HR_RETURN_ON_ERR(hr, PrepareDesktopDuplToRAM());
+		}//END-IF valid SwapChain
+		return hr;
+	}//END-FUNC
+	/*HRESULT ClsD3D11::AdjustWindowSize(UINT uiPercentage)
+	{
+		HRESULT hr = NULL;
+
+		UINT uiHeightSrc = m_pFrameData->uiHeightSrc * ((double)uiPercentage/100);
+		UINT uiWidthSrc = m_pFrameData->uiWidthSrc * ((double)uiPercentage / 100);
+		RECT myAppRect = {};
+		DXGI_MODE_DESC myBufferDesc = {};
+		DXGI_SWAP_CHAIN_DESC mySwapDesc = {};
+
+		// use old Settings for the new BufferDesc
+		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->GetDesc(&mySwapDesc));
+		myBufferDesc = mySwapDesc.BufferDesc;
+
+		myAppRect.top = 0;
+		myAppRect.bottom = uiHeightSrc;
+		myAppRect.left = 0;
+		myAppRect.right = uiWidthSrc;
+		// Berechnung der WindowSize anhand der ClientArea
+		AdjustWindowRect(&myAppRect, WINSTYLE, TRUE);
+
+
+		// overwrite with new Resolution1105 1080
+		myBufferDesc.Height = myAppRect.bottom - myAppRect.top;
+		myBufferDesc.Width = myAppRect.right - myAppRect.left;
+		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->ResizeTarget(&myBufferDesc));
+		RECT wnd = {};
+		//GetWindowRect(m_hWnd, &wnd);
+		GetClientRect(m_hWnd, &wnd);
+		// recreate the Buffers
+		HR_RETURN_ON_ERR(hr, WndSizeHasChanged());
+
+		return hr;
+	}*/
+	/// <summary>
 	/// Kopiervorgang der PixelDaten innerhalb der Loop.
 	/// Je nach CopyMethod wird die Methode ausgewählt.
 	/// Kopieren auf die D3D11Texture zum anzeigen und kopieren auf CPU-Seite für SinkWriter zum aufnhemen eines Videos
+	/// CalledBy: ClsD3D11Recording::Loop()
 	/// </summary>
 	/// <returns></returns>
 	HRESULT ClsD3D11::BitBltDataToRT()
@@ -112,7 +219,7 @@ namespace D3D
 		case CopyMethod::DesktopDupl:
 			HR_RETURN_ON_ERR(hr, GetDesktopDuplByGPU());
 			break;
-		}
+		}//END-SWITCH
 		return hr;
 	}//END-FUNC
 	/// <summary>
@@ -123,6 +230,7 @@ namespace D3D
 	/// Bei der Erstellung eines Samplers hat dieser eine feste Position in der GPU.
 	/// Sampler kann somit im Pixelshader wie folgt angesprochen werden: 
 	/// register(s0) s = Sampler, 0 = Index im PixelShader.hlsl
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
 	/// </summary>
 	HRESULT ClsD3D11::CreateAndSetSampler()
 	{
@@ -147,6 +255,7 @@ namespace D3D
 	}//END-FUNC
 	/// <summary>
 	/// Create and set Pixel- and VertexShader
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
 	/// </summary>
 	/// <returns></returns>
 	HRESULT ClsD3D11::CreateAndSetShader()
@@ -159,6 +268,7 @@ namespace D3D
 	}
 	/// <summary>
 	/// Calls all private Create Buffer methods: Vertex-, Index- and ConstantBuffers
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
 	/// </summary>
 	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateBuffers()
@@ -169,7 +279,7 @@ namespace D3D
 		HR_RETURN_ON_ERR(hr, CreateConstantBuffer());
 
 		return hr;
-	}
+	}//END-FUNC
 	/// <summary>
 	/// - Creates a D3D11Texture2D depending on the EnumType: Mapping, D2D1Surface, SubResource
 	///	- Mapping:	
@@ -183,8 +293,9 @@ namespace D3D
 	/// - SubResource:
 	///		- D3D11_USAGE_DEFAULT (usage) and 0 (cpuflags)
 	///		- CPU must wait until the Subresource is free to write
+	/// CalledBy: ClsD3D11Recording::Init3DWindow(), PrepareRecording(), SetWndAsSrc(), SetMonitorAsSrc(...)
 	/// </summary>
-	/// <param name="MyBitBltTexture">Struct mit ImgDaten: Breite, Höhe, Bytes pro Pixel, Pointer zu den Pixeldaten</param>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateD3D11Texture()
 	{
 		HRESULT hr = NULL;
@@ -257,7 +368,9 @@ namespace D3D
 	/// Erstellt eine gültiges Device und DeviceContext.
 	/// Liefert somit gültige Adresse zum Pointer der wiederum auf ein erstelltes ComObj zeigt.
 	/// Dies wird für Device und DeviceContext erledigt
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateDevice()
 	{
 		HRESULT hr = NULL;										// Rückgabewert von ApiFkt. für Errorhandling
@@ -299,7 +412,10 @@ namespace D3D
 	/// Allocated diese entsprechend
 	/// - Legt Typ und Größe der Inputparamter fest
 	/// - Übergibt nicht selbst die InputParamter: erst beim Pipeline-Durchgang (ShaderProgrammaufrufe) aufgerufen werden
-	/// - m_pVertexShaderBlob: compiliertes ShaderProgramm, beinhaltet Pointer und Größe</summary>
+	/// - m_pVertexShaderBlob: compiliertes ShaderProgramm, beinhaltet Pointer und Größe
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
+	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateInputLayout()
 	{
 		HRESULT hr = NULL;
@@ -333,8 +449,10 @@ namespace D3D
 	/// - View mit m_pD3D11Texture wird an PixelShader-Stage gebunden 
 	/// - bei Ausführung von PixelShader an OutputMerger übergeben
 	/// - OutputMerger beinhaltet Buffer der SwapChain
-	/// ->in der Pipeline (Pixelshader zum OutputMerger) wird meine m_pD3D11Texture an m_pBackBuffer übergeben
+	/// - in der Pipeline (Pixelshader zum OutputMerger) wird m_pD3D11Texture an m_pBackBuffer übergeben
+	/// CalledBy: ClsD3D11Recording::Init3DWindow(), PrepareRecording(), SetWndAsSrc(), SetMonitorAsSrc(...)
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateShaderView()
 	{
 		HRESULT hr = NULL;
@@ -352,12 +470,12 @@ namespace D3D
 	/// <summary>
 	/// - Erstellt eine Swapchain1 anstatt Swapchain
 	/// - Für Swapchain1 ist eine Factory notwendig: 
-	///		- pD3dDevice auf dxgiDevice. Polymorphie des Ziels unseres Pointers von pD3dDevice
+	///		- pD3dDevice auf dxgiDevice. 
 	///		- Erstellt über dxgiDevice ein COM-IF-OBj für Adpater
 	///		- Parent von dxgiAdapter ist dxgiFactory
-	///  mit übergebenen Device
-	/// Referenz zum leeren ComPtr für den Adapter
-	/// Referenz zum leeren ComPtr für Swapchain</summary>
+	/// CalledBy: ClsD3D11Recording::Init3DWindow()
+	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateSwapChain()
 	{
 		HRESULT hr = NULL;											// Rückgabewert von ApiFkt. für Errorhandling
@@ -368,15 +486,15 @@ namespace D3D
 
 		d3d11SwapChainDesc.Width = 0;								// use window width = 0
 		d3d11SwapChainDesc.Height = 0;								// use window height = 0
-		d3d11SwapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;// BGRA Format, BGRA ist StandardFormat für die Desktopdubli.
+		d3d11SwapChainDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;		// BGRA Format, BGRA ist StandardFormat für die Desktopdubli.
 		d3d11SwapChainDesc.SampleDesc.Count = 1;					// Kantenglättung. Wieviel Pixel für ein Pixel für Glättung: 1Px für ein Px = aus
 		d3d11SwapChainDesc.SampleDesc.Quality = 0;					// AntiAliasing bzw. Kantenglättung ist aus, folgt Quality 0
 		d3d11SwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT; // Wie wird Buffer genutzt
 		d3d11SwapChainDesc.BufferCount = 2;							// 1 Backbuffer und 1 Frontbuffer
 		
-		//d3d11SwapChainDesc.Scaling = DXGI_SCALING_STRETCH;			// DXGI passt BackbufferGröße an Ziel an 
+		//d3d11SwapChainDesc.Scaling = DXGI_SCALING_STRETCH;		// DXGI passt BackbufferGröße an Ziel an 
+		//d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;	// kopiert den Buffer mit jedem Call von device->Draw in den WindowDesktopManager
 		d3d11SwapChainDesc.Scaling = DXGI_SCALING_NONE;
-		//d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;//DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;// DXGI_SWAP_EFFECT_DISCARD;	// kopiert den Buffer mit jedem Call von device->Draw in den WindowDesktopManager
 		d3d11SwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
 		// DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL shared mit WDM, jederzeit Zugriff ohne CopyOperation
 		
@@ -405,6 +523,7 @@ namespace D3D
 	/// Alloctae Buffer that will be used for the Swapchain
 	/// Binds Buffer on RTView, View is binded on the Pipeline
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateSwapChainBuffer()
 	{
 		HRESULT hr = NULL;
@@ -423,116 +542,14 @@ namespace D3D
 		return hr;
 	}//END-FUNC
 	/// <summary>
-	/// Festlegen wie das fertige Bild im Frontbuffer angezeigt werden soll
-	/// Passt Bild für das ZielFenster an: MyViewport
-	/// Stages: Vertexshader->Rasterizer->Pixelshader->OutputMerger
-	/// Setzt Topology für mein 3D-Umgebung. Diese ist nur ein 2D-Quad das aufs voll Fenster gestreckt wird
-	///		- 2 Dreiecke die ein Quad ergeben.
-	/// Legt das RenderTarget fest. Meine RenderView die an den BackBuffer gebunden ist. 
-	/// BackBuffer ist an m_pD3D11Texture gebunden. Texture wird über DeskDupl oder per Mapping von GDI geupdatet
-	/// </summary>
-	HRESULT ClsD3D11::ReSizeD3D11Window()
-	{
-		HRESULT hr = S_OK;
-		//UINT uiWidth = 0;
-		//UINT uiHeight = 0;
-
-		//GetClientRect(m_hWnd, &m_myClientRect);
-		//uiWidth = m_myClientRect.right - m_myClientRect.left;
-		//uiHeight = m_myClientRect.bottom - m_myClientRect.top;
-		WndSizeHasChanged();
-		
-		if (m_pD3dContext)
-		{
-			/**********Input Assembler**********/
-			m_pD3dContext->IASetPrimitiveTopology(
-				D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);			// Legt interpretation der eingehenden Daten/Vertices fest: 
-																// Punkte, Linie, Linien, Dreicke, zusammenhängende Dreiecke etc.
-			if (*m_pFrameData->pCpyMethod == CopyMethod::DesktopDupl)
-				HR_RETURN_ON_ERR(hr, PrepareDesktopDuplToRAM());
-		}
-		return hr;
-	}//END-FUNC
-	/// <summary>
-	/// - Will be triggered by WM_SIZE MSG in ClsWnd::ProcessTriggeredMsg(...) 
-	///   ClsD3D11Recording::WndSizeHasChanged() will be called there and call this method.
-	/// - Resizing the Backbuffer that is strong binded to the WindowSize
-	/// - Resizing will also be triggered during the WindowCreationProcess
-	///   -> D3D11 is not init in that case, and it will skip the if-case
-	/// - it will NOT resize the D3D11Texture that is used in DesktopDupl for recording
-	/// </summary>
-	/// <param name="uiWidth">New Width</param>
-	/// <param name="uiHeight">New Height</param>
-	/// <returns>HRESULT</returns>
-	HRESULT ClsD3D11::WndSizeHasChanged()
-	{
-		HRESULT hr = NULL;
-		UINT uiValidWidth=0;
-		UINT uiValidHeight=0;
-		UINT uiNewTopX = 0;
-		UINT uiNewTopY = 0;
-		UINT uiWidth = 0;
-		UINT uiHeight = 0; 
-
-		if (m_pD3dContext && m_pDxgiSwapChain)
-		{
-			// Clear Pipeline with a zero-Array of RenderTargetView
-			m_pD3dContext->OMSetRenderTargets(0, NULL, NULL);
-			// have to reset the Buffer, that keeps the address of swapchains backbuffer
-			m_pBackBuffer.Reset();
-			// have to reset the RenderTargetView that was init. with m_pBackBuffer
-			m_pTarRenderView.Reset();
-			/* Sends the rest of the old Backbuffer from RAM to the GPU-VRAM
-			* We have to do it, or it wents crazy and old Buffer will be send to new GPU-side Buffersize*/
-			m_pD3dContext->Flush();
-			//myBufferDesc = mySwapChainDesc.BufferDesc;
-			//GetClientRect(m_hWnd, &m_myClientRect);
-			//uiWidth = m_myClientRect.right - m_myClientRect.left;
-			//uiHeight = m_myClientRect.bottom - m_myClientRect.top;
-			//CalcNewWndSize(uiWidth, uiHeight, &uiValidWidth, &uiValidHeight);
-			//CalcNewWndPos(uiValidWidth, uiValidHeight, uiWidth, uiHeight, &uiNewTopX, &uiNewTopY);
-			GetCalcD3DWnd().CalcPosAndSize();
-			// Das D3DFenster hat nach Berechnung des korrekten Seitenverhältnis eine kleinere Höhe als die Fensterhöhe.
-			// Bsp: D3DFenster 300, Fensterhöhe 500
-			// Um das D3DFenster im WinAPI-Fenster zu zentrieren benötigt man die obere linke Ecke. 
-			// Von da an wird das D3DFenster gezeichnet. 
-			// Berechnung: 500-300=200 (Ergebnis: oberer Rand + unterer Rand)
-			// Benötigen aber nur den oberen Rand: 200/2 = 100
-			// Problem: Laut D3DDef wird das D3DFenster immer bei Pos(0,0) gezeichnet
-			// Lösung: D3DFensterHöhe: oberer Rand + 300 = 400
-			// Im D3DFenster wird dann der Viewport ab Pos(0,100) gezeichnet
-			// Viewport zeichnet erst ab einer höhe von 100 abwärts
-			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->ResizeBuffers(
-				0,
-				GetCalcD3DWnd().GetD3DWndWidth(),// uiValidWidth + uiNewTopX,
-				GetCalcD3DWnd().GetD3DWndHeight(),//uiValidHeight+ uiNewTopY,
-				DXGI_FORMAT_UNKNOWN,
-				0));
-			// Recreate Buffer and RenderTargetView with new Width/Height included
-			HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->
-				GetBuffer(0, IID_PPV_ARGS(&m_pBackBuffer)));// keeps the adress of Swapchains Backbuffer in m_pBackBuffer 
-			// Creates a View with the BackBuffer of the Swapchain
-			HR_RETURN_ON_ERR(hr, 
-				m_pD3dDevice->CreateRenderTargetView(
-					m_pBackBuffer.Get(), 
-					0, 
-					&m_pTarRenderView));
-			D3D11_VIEWPORT myViewport = GetCalcD3DWnd().GetD3DViewPort();// { (FLOAT)uiNewTopX, (FLOAT)uiNewTopY, (FLOAT)(uiValidWidth), (FLOAT)(uiValidHeight), 0.0f, 1.0f };
-			m_pD3dContext->RSSetViewports(1, &myViewport);			// Die Area wo Rasterizer zeichnet, genau definieren
-		
-			m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
-		}//END-IF valid Swapchain
-		return hr;
-	}//END-FUNC
-	/// <summary>
 	/// Durchlauf der D3D11-Stages mit .Draw() bzw. .DrawIndexed() und Benutzen der vorh. def. Variablen wie Backbuffer/Texture
 	/// BackBuffer wird zum Frontbuffer und Bild wird somit angezeigt
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::PresentTexture()
 	{
 		HRESULT hr = NULL;
-		//m_pD3dContext->ClearRenderTargetView(m_pTarRenderView->Get(), m_fClearColor);
+		m_pD3dContext->ClearRenderTargetView(m_pTarRenderView.Get(), m_fClearColor);
 		m_pD3dContext->OMSetRenderTargets(1, m_pTarRenderView.GetAddressOf(), 0);
 		m_pD3dContext->DrawIndexed(							// verwenden Indices fürs zeichnen
 			(UINT)std::size(m_myIndexBuffer.iIndices),			// sizeof(iIndices/iIndices[0]); 12/2 = 6; 12Byte/2Byte (2Byte/16Bit = short int)
@@ -565,28 +582,14 @@ namespace D3D
 	///	- MyConstantBuffer:	Array aus structs was Matrizen enthält (hier nur ein Element/Matrix)
 	///	- pConstantBuffer: Pointer auf Daten
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::SetConstantBuffer()
 	{
 		HRESULT hr = NULL;
-		m_myConstantBuffer.fAngle = m_oTimer.Peek();			// Winkeländerung pro Frame: Zeitdifferenz zum letzten Durchgang
+		//m_myConstantBuffer.fAngle = m_oTimer.Peek();			// Winkeländerung pro Frame: Zeitdifferenz zum letzten Durchgang
 		D3D11_MAPPED_SUBRESOURCE mappedRes;						// Datencontainer
 
-		// 4x4 Matrix
-		// 1. x-Koord
-		// 2. y-Koord
-		// 3. z-Koord: keine Änderung, d.h. Einheitswerte
-		// 4. für Mondifikation: keine Änderung, d.h. Einheitswerte
-		// 4x2 Matrix geht nicht für Berechnung -> Zur Berechnung muss Anzahl Zeile = Anzahl Spalte -> 4x4Matrix
-		m_myConstantBuffer.myConstantBuffer =
-		{
-			{
-				std::cos(m_myConstantBuffer.fAngle), std::sin(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
-				-std::sin(m_myConstantBuffer.fAngle), std::cos(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			}
-		};
-		// Locken des Buffers, sodass CPU drauf schreiben kann (gpu muss mit lesen warten)
+		// Lock buffer for the CPU
 		HR_RETURN_ON_ERR(hr, m_pD3dContext->Map(
 			m_myConstantBuffer.pConstantBuffer.Get(),			// Welcher Buffer soll gelockt werden
 			0,													// Index für Subresource (können mehrere im Array sein)
@@ -601,62 +604,46 @@ namespace D3D
 
 		return hr;
 	}//END-FUNC
+	/// <summary>
+	/// Sets the zoom factor per function on GPU-Side
+	/// Setting the Constont buffer can be done every frame.
+	/// Much faster instead setting the coordinates of the texture itself.
+	/// </summary>
+	/// <param name="fZoomPercentage">Zoom factor in percentage</param>
+	/// <returns>HRESULT</returns>
+	HRESULT ClsD3D11::SetZoomPercentage(float fZoomPercentage)
+	{
+		HRESULT hr = NULL;
+		float fZoom = fZoomPercentage / 100;
+		m_myConstantBuffer.myConstantBuffer =
+		{
+			{
+				// EinheitsMatrix, keine Veränderung pro Frame
+				// Constant Buffer (Funktion) kann pro Frame an GPU gesendet werden
+				// 4x4 Matrix
+				// 1. x-Koord
+				// 2. y-Koord
+				// 3. z-Koord: keine Änderung, d.h. Einheitswerte
+				// 4. für Mondifikation: keine Änderung, d.h. Einheitswerte
+				// 4x2 Matrix geht nicht für Berechnung -> Zur Berechnung muss Anzahl Zeile = Anzahl Spalte -> 4x4Matrix
+				// rotate per Frame
+				//std::cos(m_myConstantBuffer.fAngle), std::sin(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
+				//-std::sin(m_myConstantBuffer.fAngle), std::cos(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
+				// Zoom in or out one times.
+				1.0f * fZoom, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f * fZoom, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			}
+		};
+		// Matrix für Berechnung des Bildes in GPU laden
+		HR_RETURN_ON_ERR(hr, SetConstantBuffer());
+
+		return hr;
+	}//END-FUNC
 	/*************************************************************************************************
 	**************************************PRIVATE-METHODES********************************************
 	*************************************************************************************************/
-	/*
-	void ClsD3D11::CalcNewWndPos(UINT uiValidWidth, UINT uiValidHeight,UINT uiWidth, UINT uiHeight,UINT* uiTopX, UINT* uiTopY)
-	{
-		if (uiWidth > uiValidWidth)
-		{
-			*uiTopX = (uiWidth - uiValidWidth) / 2;
-		}
-		if (uiHeight > uiValidHeight)
-		{
-			*uiTopY = (uiHeight - uiValidHeight) / 2;
-		}
-	}
-	void ClsD3D11::CalcNewWndSize(UINT uiWndWidth, UINT uiWndHeight, UINT* uiNewWndWidth, UINT* uiNewWndHeight)
-	{
-		bool bWidth = false;
-		UINT uiSrcHeight = m_pFrameData->uiHeightSrc;
-		UINT uiSrcWidth = m_pFrameData->uiWidthSrc;
-		double dRatio = 0;
-
-
-		if (uiSrcHeight > uiSrcWidth)
-		{
-			dRatio = (double)uiSrcHeight / (double)uiSrcWidth;
-		}
-		else
-		{
-			dRatio = (double)uiSrcWidth / (double)uiSrcHeight;
-		}
-		// auf fenster runter skalieren
-		if (uiWndWidth <= uiSrcWidth && uiWndHeight <= uiSrcHeight)
-		{
-			*uiNewWndHeight = uiWndWidth * (UINT)(1 / dRatio);
-			*uiNewWndWidth = uiWndWidth;
-
-			if (*uiNewWndHeight > uiWndHeight)
-			{
-				*uiNewWndWidth = uiWndHeight * (UINT)dRatio;
-				*uiNewWndHeight = uiWndHeight;
-			}
-		}
-		else
-		{
-			*uiNewWndHeight = uiWndWidth * (1 / dRatio);
-			*uiNewWndWidth = uiWndWidth;
-
-			if (*uiNewWndHeight > uiWndHeight)
-			{
-				*uiNewWndWidth = uiWndHeight * dRatio;
-				*uiNewWndHeight = uiWndHeight;
-			}
-
-		}
-	}*/
 	/// <summary>
 	/// Erstellung des ConstantBuffers: 
 	/// - Erstellen einer Matrix
@@ -667,7 +654,9 @@ namespace D3D
 	/// Referenz zu meinem ConstantBuffer, dass folgende Daten beinhaltet:
 	///	fAngle: Winkel der pro Frame geändert wird (in Matrix)
 	///	ConstantBuffer:	Array aus structs was Matrizen enthält (hier nur ein Element, da nur eine Matrix)
-	///	ConstantSubResData: beinhaltet die Daten (Matrizen) </summary>
+	///	ConstantSubResData: beinhaltet die Daten (Matrizen) 
+	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateConstantBuffer()
 	{
 		HRESULT hr = NULL;
@@ -698,7 +687,9 @@ namespace D3D
 	/// Referenz zu meinem IndexStruct, dass folgende Daten beinhaltet:
 	///	IndexBufferDesc: Description die benötigt wird um ein IndexBuffer auf GPU zu erstellen
 	///	iIndices:	Indices für die Vertices 1= Vertex 1 in aVertices
-	///	IndexSubResData: beinhaltet die Daten (iIndices) </summary>
+	///	IndexSubResData: beinhaltet die Daten (iIndices) 
+	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateIndexBuffer()
 	{
 		HRESULT hr = NULL;									// Rückgabewert von ApiFkt. für Errorhandling
@@ -730,7 +721,7 @@ namespace D3D
 	/// m_pD3dContext->PSSetShader: kopiert compiliertes ShaderProgramm auf GPU in die VertexShader-Engine
 	/// Es wird ein IF-Pointer zum erstellten VertexShader-Obj erstellt: pPixelShader
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreatePixelShader()
 	{
 		HRESULT hr = NULL;
@@ -780,6 +771,7 @@ namespace D3D
 	///	aVertices:	Punkte für das Zeichnen der 2 Dreiecke (Quad)
 	///	VertexSubResourceData: beinhaltet die Daten (aVertices) 
 	///	</summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateVertexBuffer()
 	{
 		VertexBufferContent VBufContent;						// Punkte
@@ -817,7 +809,7 @@ namespace D3D
 	/// Es wird ein IF-Pointer zum erstellten VertexShader-Obj erstellt: pVertexShader
 	/// </summary>
 	/// <param name="vsBlob">Referenz zum leeren ComPtr für ShaderProgrammDaten, wo sie gespeichert werden sollen</param>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::CreateVertexShader()
 	{
 		ComPtr<ID3D11VertexShader> pVertexShader;			// IF-Pointer zum VertexShaderProgramm auf GPU
@@ -853,7 +845,7 @@ namespace D3D
 	///	      - m_pD3D11Texture to the ShaderView (which is drawn in the PixelShader)
 	///		  - Pipeline: PixelShader to the OutputMerger (m_pD3D11Texture to the m_pBackBuffer in SwapChain)
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::BitBltDataToD2D1Resource()
 	{
 		HRESULT hr = NULL;
@@ -872,7 +864,7 @@ namespace D3D
 	/// m_pD3D11Texture ist an m_pShaderView gebunden
 	/// m_pShaderView ist als Input an PixelShader gebunden
 	/// </summary>
-	/// <param name="MyBitBltData"></param>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::BitBltDataToD3D11SubResource()
 	{
 		HRESULT hr = NULL;
@@ -889,7 +881,6 @@ namespace D3D
 			0,
 			&m_mySubResD3D11Texture);
 
-
 		memcpy_s(m_mySubResD3D11Texture.pData, uiPixelDataSize, pData, uiPixelDataSize);			// Pixeldaten in SubResource von D3d11Texture kopieren
 		m_pD3dContext->Unmap(m_pD3D11Texture.Get(), 0);
 		return hr;
@@ -903,6 +894,8 @@ namespace D3D
 	///   - wird nicht zur Anzeige benötigt (geht alles über GPU)
 	/// CalledBy: GetDesktopDuplByGPU()
 	/// </summary>
+	/// <param name="pD3dAcquiredDesktopImage">Desktop image by DesktopDupl</param>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::DesktopDuplToRAM(ComPtr<ID3D11Texture2D> pD3dAcquiredDesktopImage)
 	{
 		HRESULT hr = NULL;
@@ -937,29 +930,24 @@ namespace D3D
 	/// - OutputMergerStage beinhaltet Buffer der Swapchain
 	/// CalledBy: BitBltDataToRT()
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::GetDesktopDuplByGPU()
 	{
 		HRESULT hr = NULL;
 		ComPtr<IDXGIResource> pDxgiDesktopResource;				// Container for PixelData of the Output
 		ComPtr<ID3D11Texture2D> pD3dAcquiredDesktopImage;		// Resource will be casted to this Texture
-
-
 		// AcquireNextFrame returns a CPU inaccessible IDXGIResource, so we need to make a copy.
 
-		HRESULT hrr = E_HANDLE;
-
-		//while (FAILED(hrr))
-		//{
 		hr= m_pDeskDupl->AcquireNextFrame(
-				0,												// Framegültigkeit in ms. Muss noch beim nächsten Durchlauf verfügbar sein
-				&m_MyFrameInfo,										// MouseCurserInformationen 
-																	// letzte Aktualisierung des DesktopFrames seitens DWM
+				0,												// How long this Function waits for the GPU for getting a frame
+																// 0 = GPU already finished and has a frame for us
+				&m_myFrameInfo,									// MouseCurserInformationen 
+																// letzte Aktualisierung des DesktopFrames seitens DWM
 				&pDxgiDesktopResource);							// Container für ImgDaten
-		//}
 
-		if (hr == DXGI_ERROR_WAIT_TIMEOUT)
+		if (hr == DXGI_ERROR_WAIT_TIMEOUT)						// timeout will be instant, retry the loop
 			return S_OK;
-		m_MyFrameInfo.AccumulatedFrames;
+		//m_MyFrameInfo.AccumulatedFrames;						// Skipped frames per GPUCall e.g. GPU finished 10 frames, and we take the 10.
 		// LowLvl (Hardwarenah) zu HighLvl
 		HR_RETURN_ON_ERR(hr, pDxgiDesktopResource->QueryInterface(
 			IID_PPV_ARGS(&pD3dAcquiredDesktopImage)));
@@ -975,7 +963,7 @@ namespace D3D
 	/// Overlay a 2D-Picture over the D3D-Content
 	/// CalledBy: CreateD3DTexture
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::InitD2D1()
 	{
 		HRESULT hr = NULL;
@@ -995,14 +983,14 @@ namespace D3D
 	/// - m_pDeskDupl: DesktopObj womit Frames ausgelesen werden könne
 	/// - m_MyOutputDuplDesc: Properties des Monitorabbildes
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::InitDesktopDuplication()
 	{
 		HRESULT hr = NULL;
 		ComPtr<IDXGIOutput> pDxgiOutput;
 		ComPtr<IDXGIOutput1> pDxgiOutput1;
 
-		HR_RETURN_ON_ERR(hr, m_pdxgiAdapter->EnumOutputs(m_uiPickedMonitor, &pDxgiOutput));
+		HR_RETURN_ON_ERR(hr, m_pdxgiAdapter->EnumOutputs(*m_pFrameData->pPickedMonitor, &pDxgiOutput));
 		//if (FAILED(hResult))
 		//	return 0;
 		HR_RETURN_ON_ERR(hr, pDxgiOutput->QueryInterface(IID_PPV_ARGS(&pDxgiOutput1)));// Es gibt 2 IF die ein DxgiOutput erbt/implementiert. 
@@ -1023,10 +1011,6 @@ namespace D3D
 		HR_RETURN_ON_ERR(hr, pDxgiOutput1->DuplicateOutput(		// Creates a complete Duplication of a Output/Monitor 
 			m_pD3dDevice.Get(),
 			&m_pDeskDupl));										// pDeskDupl beinhalted Zugriff auf Frames etc.
-		//DXGI_OUTDUPL_DESC pp = {};
-
-		//m_pDeskDupl->GetDesc(&pp);				// Description des Monitors wie Auflösung etc.
-
 
 		return hr;
 	}//END-FUNC
@@ -1035,7 +1019,7 @@ namespace D3D
 	/// Used if CopyMethod::DeskDupl
 	/// CalledBy: PreparePresentation
 	/// </summary>
-	/// <returns></returns>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::PrepareDesktopDuplToRAM()
 	{
 		HRESULT hr = NULL;
@@ -1061,6 +1045,7 @@ namespace D3D
 	/// Info: - m_pD3D11Texture must be created with TextureDescription: D3D11_USAGE_DEFAULT and CPUflags = 0
 	/// CalledBy: BitBltDataToRT()
 	/// </summary>
+	/// <returns>HResult</returns>
 	HRESULT ClsD3D11::UpdateMySubResource()
 	{
 		UINT& uiHeightDest = m_pFrameData->uiHeightDest;
@@ -1070,7 +1055,6 @@ namespace D3D
 
 		UINT uiPitch = uiWidthDest * uiBpp;
 		D3D11_BOX destRegion;
-
 
 		destRegion.left = 0;
 		destRegion.right = uiWidthDest;
@@ -1122,15 +1106,4 @@ namespace D3D
 			m_vMonitorInfo[m_uiPickedMonitor]->iHeight,
 			BITDEPTH);
 	}*/
-	/// <summary>
-	/// Destructor
-	/// </summary>
-	ClsD3D11::~ClsD3D11()
-	{
-		if (m_pClsD2D1)
-		{
-			delete m_pClsD2D1;
-			m_pClsD2D1 = nullptr;
-		}
-	}//END-CONS
 }//END-NAMESPACE D3D

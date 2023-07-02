@@ -1,9 +1,14 @@
 #pragma once
 #include "framework.h"
+#include "FrameData.h"
 #include "D3DBuffer.h"
 #include "ClsD2D1.h"
-#include "ClsCalcD3DWnd.h"
+#include "ClsCalcViewPort.h"
 //#include "ClsDataContainer.h"
+
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
 
 #define PFORMAT DXGI_FORMAT_B8G8R8A8_UNORM;
 
@@ -16,12 +21,8 @@ namespace D3D
 	class ClsD3D11
 	{
 	private:
-		//UINT m_iSwitchBuffer = 0;
 		HWND m_hWnd;										// Target Window for displaying Data
-		UINT m_uiPickedMonitor;								// Monitor that will be used as DataSource
 		float m_fClearColor[4] = { 0.3f, 1.0f, 0.3f, 1.0f };// ClearColor
-		RECT m_myClientRect;								// Client Window Place (Without Border, Menu etc.)
-		//CopyMethod m_myCpyMethod;							// CopyMethod of PixelData
 		FrameData* m_pFrameData;							// Frame Format Information
 		
 		// Device, Factory, SwapChain
@@ -34,16 +35,14 @@ namespace D3D
 		// Swapchain
 		ComPtr<IDXGISwapChain1> m_pDxgiSwapChain;			// needed for Backbuffer access
 		ComPtr<ID3D11Texture2D> m_pBackBuffer;				// Backbuffer of the SwapChain
-		//ComPtr<ID3D11Texture2D> m_pBackBuffer2;				// Backbuffer of the SwapChain
 		ComPtr<ID3D11RenderTargetView> m_pTarRenderView;	// RenderTargetView, will be binded to the Backbuffer
 
 		// Size SwapChain
-		ClsCalcD3DWnd m_myClsCalcD3DWnd;
+		ClsCalcViewPort m_myClsCalcViewPort;
 
 		// Displaying Texture, will be feeded with PixelData
 		ComPtr<ID3D11Texture2D> m_pD3D11Texture;			// Texture that will be binded to the ShaderView
 		ComPtr<ID3D11ShaderResourceView> m_pShaderView;		// Will be used in PixelShaderStage as ShaderRessource (finally the Output for the Display)
-		
 
 		// Shader Programs
 		ComPtr<ID3DBlob> m_pVertexShaderBlob;				// Will be have the ProgramCode for the VertexShader
@@ -54,33 +53,28 @@ namespace D3D
 		IndexBufferContent m_myIndexBuffer;
 		
 		// DesktopDupl
-		ComPtr<IDXGIOutputDuplication> m_pDeskDupl;			// Information of a MonitorOutput (DXGIOutput)
-		//ComPtr<IDXGIResource> m_pDxgiDesktopResource;		// Container for PixelData of the Output
-		//ComPtr<ID3D11Texture2D> m_pD3dAcquiredDesktopImage; // Resource will be casted to this Texture
-		ComPtr<ID3D11Texture2D> m_pD3D11TextureCPUAccess;	// Texture with CPU Access, same Data as m_pD3dAcquiredDesktopImage
-		D3D11_TEXTURE2D_DESC m_myTextureDescCPUAccess;		// TextureDescription
-		DXGI_OUTDUPL_FRAME_INFO m_MyFrameInfo;				// additional Information of the Output
+		DXGI_OUTDUPL_FRAME_INFO m_myFrameInfo;				// additional Information of the Output
 		D3D11_MAPPED_SUBRESOURCE m_mySubResD3D11Texture;	// SubRessource of the m_pD3D11TextureCPUAccess
+		D3D11_TEXTURE2D_DESC m_myTextureDescCPUAccess;		// TextureDescription
+		ComPtr<IDXGIOutputDuplication> m_pDeskDupl;			// Information of a MonitorOutput (DXGIOutput)
+		ComPtr<ID3D11Texture2D> m_pD3D11TextureCPUAccess;	// Texture with CPU Access, same Data as m_pD3dAcquiredDesktopImage
 		
 		// D2D1 Interface
 		ClsD2D1* m_pClsD2D1;
 		
-		// Constant Buffer Transformation, 
-		// will be updated every Frame per MatrixFunction without slow CPU operations
+		// Constant buffer transformation, 
+		// can be updated every frame per MatrixFunction without slow CPU operations
 		ConstantBufferContent m_myConstantBuffer;				
 		ClsTimer m_oTimer;									// Timer Obj for ConstantBuffer, Value for Matrixcalculation for every frame (Constantbuffer are not used yet)
 	public:
 		ClsD3D11();
 		~ClsD3D11();
 	public:
-		HRESULT WndSizeHasChanged();
-		//void SetClientRect(RECT myClientRect);
-		//void SetCpyMethod(CopyMethod& myCpyMethod);
 		void SetFrameData(FrameData** pFrameData);
-		void SetPickedMonitor(UINT uiMonitor);
 		void SetWnd(HWND hWnd);
-		ClsCalcD3DWnd& GetCalcD3DWnd();
-		
+		HRESULT SetZoomPercentage(float fZoomPercentage);
+		HRESULT AdjustD3D11Ratio();
+		//HRESULT AdjustWindowSize(UINT uiPercentage);
 		HRESULT BitBltDataToRT();
 		HRESULT CreateAndSetSampler();
 		HRESULT CreateAndSetShader();
@@ -91,12 +85,10 @@ namespace D3D
 		HRESULT CreateShaderView();
 		HRESULT CreateSwapChain();
 		HRESULT CreateSwapChainBuffer();
-		HRESULT ReSizeD3D11Window();
 		HRESULT PresentTexture();
 		HRESULT SetConstantBuffer();
+		ClsCalcViewPort& GetClsCalcViewPort();
 	private:
-		//void CalcNewWndPos(UINT uiValidWidth, UINT uiValidHeight, UINT uiWidth, UINT uiHeight, UINT* uiTopX, UINT* uiTopY);
-		//void CalcNewWndSize(UINT uiWndWidth, UINT uiWndHeight, UINT* uiNewWndWidth, UINT* uiNewWndHeight);
 		HRESULT CreateConstantBuffer();
 		HRESULT CreateIndexBuffer();
 		HRESULT CreatePixelShader();

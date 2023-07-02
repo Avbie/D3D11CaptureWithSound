@@ -1,6 +1,10 @@
 #pragma once
 #include "framework.h"
 
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+
 namespace D3D
 {
 	/// <summary>
@@ -88,7 +92,9 @@ namespace D3D
 		struct
 		{
 			float element[4][4];
-		} transform;							// registered cbuffer in VertexShader (not about name, about structure and index)
+
+		} transform;						// registered cbuffer in VertexShader (not about name, about structure and index)
+	
 	};
 	/// <summary>
 	/// Struct enthält ein Struct mit MyConstantBuffer der ein Array von Matrizen (hier nur ein Element) beinhaltet

@@ -6,6 +6,11 @@
 /// Its needed because of we need a specific size per VideoFrame.
 /// </summary>
 
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+using namespace std;
+
 struct ReBuffer
 {
     size_t m_uiBufferSize;

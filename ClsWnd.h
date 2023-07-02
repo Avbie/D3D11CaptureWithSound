@@ -20,13 +20,17 @@ class ClsWnd
 {
 private:
 	BOOL m_bInFocus;
-	HWND m_hWnd;
+	
 	HINSTANCE m_hInstance;
+	//static UINT m_uiEditControlFPS;
 	UINT m_uiMyFlags;
 	std::bitset<256> m_keyState;
 	MouseState m_mouseState;
 	MSG m_Msg;
-	ClsD3D11Recording* m_pClsD3D11Recording;
+	static ClsD3D11Recording* m_pClsD3D11Recording;
+public:
+	static HWND m_hDlgSettings;
+	HWND m_hWnd;
 public:
 	ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording);
 public:
@@ -34,6 +38,7 @@ public:
 	BOOL RunMsgLoop();
 	HWND GetHWND();
 	LRESULT ProcessTriggeredMsg(HWND wnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static INT_PTR  CALLBACK Settings(HWND hwndDlg, UINT message, WPARAM wParam, LPARAM lParam);
 	static INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 private:
 	void CreateMyMenu();

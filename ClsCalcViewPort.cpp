@@ -1,49 +1,51 @@
-#pragma once
-#include "framework.h"
+#include "ClsCalcViewPort.h"
 
-class ClsCalcD3DWnd
+namespace D3D
 {
-private:
-	HWND m_hWnd;
-	UINT m_uiD3DWndWidth;
-	UINT m_uiD3DWndHeight;
-	UINT m_uiD3DWndTopX;
-	UINT m_uiD3DWndTopY;
-	FrameData* m_pFrameData;
-	D3D11_VIEWPORT m_myViewPort;
-public:
-	ClsCalcD3DWnd()
+	ClsCalcViewPort::ClsCalcViewPort()
 	{
 		m_hWnd = NULL;
 		m_uiD3DWndHeight = 0;
 		m_uiD3DWndWidth = 0;
-		m_uiD3DWndTopX = 0;
-		m_uiD3DWndTopY = 0;
+		m_iD3DWndTopX = 0;
+		m_iD3DWndTopY = 0;
 		m_myViewPort = {};
 		m_myViewPort.MaxDepth = 1.0f;
 		m_myViewPort.MinDepth = 0.0f;
 		m_pFrameData = NULL;
 	}
-	void SetFrameData(FrameData** ppFrameData)
+	void ClsCalcViewPort::SetFrameData(FrameData** ppFrameData)
 	{
 		m_pFrameData = *ppFrameData;
 	}//END-FUNC
-	void SetWnd(HWND hWnd)
+	void ClsCalcViewPort::SetWnd(HWND hWnd)
 	{
 		m_hWnd = hWnd;
 	}
-	void CalcNewWndSize()
+	void ClsCalcViewPort::CalcViewPortSize()
 	{
 		UINT uiSrcHeight = m_pFrameData->uiHeightSrc;
 		UINT uiSrcWidth = m_pFrameData->uiWidthSrc;
 		UINT uiWndWidth = 0;
 		UINT uiWndHeight = 0;
 		double dRatio = 0;
-		RECT myClientRect = {};
+		RECT myClientRectAppWnd = {};
+		//RECT myClientRectSrcWnd = {};
 		
-		GetClientRect(m_hWnd, &myClientRect);
-		uiWndWidth = myClientRect.right - myClientRect.left;
-		uiWndHeight = myClientRect.bottom - myClientRect.top;
+		// Src Window could change the size during stream
+
+		/*if (m_pFrameData->bWndAsSrc)
+		{
+			GetClientRect(m_pFrameData->pClsWndHandle->GetHandle(), &myClientRectSrcWnd);
+			m_pFrameData->uiWidthSrc = myClientRectSrcWnd.right - myClientRectSrcWnd.left;
+			m_pFrameData->uiHeightSrc = myClientRectSrcWnd.bottom - myClientRectSrcWnd.top;
+			m_pFrameData->uiTop = 0;
+			m_pFrameData->uiLeft = 0;
+		}*/
+
+		GetClientRect(m_hWnd, &myClientRectAppWnd);
+		uiWndWidth = myClientRectAppWnd.right - myClientRectAppWnd.left;
+		uiWndHeight = myClientRectAppWnd.bottom - myClientRectAppWnd.top;
 
 		if (uiSrcHeight > uiSrcWidth)
 		{
@@ -66,7 +68,7 @@ public:
 		m_myViewPort.Height = (FLOAT)m_uiD3DWndHeight;
 		m_myViewPort.Width = (FLOAT)m_uiD3DWndWidth;
 	}
-	void CalcNewWndPos()
+	void ClsCalcViewPort::CalcViewPortPos()
 	{
 		UINT uiWndWidth = 0;
 		UINT uiWndHeight = 0;
@@ -79,38 +81,31 @@ public:
 		// zentriere Hˆhe falls WndHˆhe grˆﬂer D3DWinHˆhe
 		if (uiWndWidth > m_uiD3DWndWidth)
 		{
-			m_uiD3DWndTopX = (uiWndWidth - m_uiD3DWndWidth) / 2;
+			m_iD3DWndTopX = (uiWndWidth - m_uiD3DWndWidth) / 2;
 		}
 		// falls gleich groﬂ, dann gibt es nicht szu zentrieren
 		else if (uiWndWidth == m_uiD3DWndWidth)
-			m_uiD3DWndTopX = 0;
+			m_iD3DWndTopX = 0;
 		// zentriere Breite falls WndBreite grˆﬂer D3DWinBreite
 		if (uiWndHeight > m_uiD3DWndHeight)
 		{
-			m_uiD3DWndTopY = (uiWndHeight - m_uiD3DWndHeight) / 2;
+			m_iD3DWndTopY = (uiWndHeight - m_uiD3DWndHeight) / 2;
 		}
 		// falls gleich groﬂ, dann gibt es nicht szu zentrieren
 		else if (uiWndHeight == m_uiD3DWndHeight)
-			m_uiD3DWndTopY = 0;
+			m_iD3DWndTopY = 0;
 
-		m_myViewPort.TopLeftX = (FLOAT)m_uiD3DWndTopX;
-		m_myViewPort.TopLeftY = (FLOAT)m_uiD3DWndTopY;
+		m_myViewPort.TopLeftX = (FLOAT)m_iD3DWndTopX;
+		m_myViewPort.TopLeftY = (FLOAT)m_iD3DWndTopY;
 	}
-	void CalcPosAndSize()
+	//void ClsCalcD3DWnd::
+	void ClsCalcViewPort::CalcViewPortSizeAndPos()
 	{
-		CalcNewWndSize();
-		CalcNewWndPos();
+		CalcViewPortSize();
+		CalcViewPortPos();
 	}
-	D3D11_VIEWPORT GetD3DViewPort()
+	D3D11_VIEWPORT ClsCalcViewPort::GetViewPort()
 	{
 		return m_myViewPort;
 	}
-	UINT GetD3DWndHeight()
-	{
-		return m_uiD3DWndHeight + m_uiD3DWndTopY;
-	}
-	UINT GetD3DWndWidth()
-	{
-		return m_uiD3DWndWidth + m_uiD3DWndTopX;
-	}
-};
+}

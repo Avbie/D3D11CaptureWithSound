@@ -1,5 +1,7 @@
 #pragma once
 #include "ClsWnd.h"
+HWND ClsWnd::m_hDlgSettings = NULL;
+ClsD3D11Recording* ClsWnd::m_pClsD3D11Recording = NULL;
 /// <summary>
 /// Konstruktor von ClsWnd
 /// Creation of the registered Window
@@ -18,11 +20,11 @@ ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 {
 	m_bInFocus = FALSE;
 	m_hInstance = GetModuleHandle(NULL);
-	m_uiMyFlags = WS_BORDER | WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX;
+	m_uiMyFlags = WINSTYLE;
 	m_mouseState = {};
 	m_Msg = {};
 	m_pClsD3D11Recording = pClsD3D11Recording;
-
+	m_hDlgSettings = NULL;
 	m_hWnd = CreateWindowEx(
 		CS_OWNDC,							// Style Flags
 		ClsWndProc::GetMyClassName(),
@@ -38,6 +40,8 @@ ClsWnd::ClsWnd(LPCWSTR pstrName, ClsD3D11Recording* pClsD3D11Recording)
 		this								// CustomParameter, VoidPointer
 	);
 	CreateMyMenu();							// Simple Menu
+
+	
 	//CreateButton();
 	m_pClsD3D11Recording->SetHWND(m_hWnd);	// sets the WindowHandle in Superclass
 }//END-CONSTR
@@ -71,11 +75,22 @@ BOOL ClsWnd::RunMsgLoop() {
 	* 4. MsgFilter bis (Flags um Msgs zu Filtern, damit wir nich talle bekommen, 0 = kein Filter)
 	* 5. Was soll mit Msg gemacht werden nachdem wir sie gelesen haben
 	*/
-	while (PeekMessage(&m_Msg, m_hWnd, 0, 0, PM_REMOVE))
+	while (PeekMessage(&m_Msg, nullptr, 0, 0, PM_REMOVE))
 	{
-		TranslateMessage(&m_Msg);	// setzt/fügt interne Param dazu
-		DispatchMessage(&m_Msg);	// ruft unsere Callback-Funktion auf 
-									// die wir im Wnd-Descriptor angegeben haben (ClsWndProc::MsgProcSetup/MsgProcRun)
+		// IsWindow(m_hDlgSettings) ||
+		if ( !IsDialogMessage(m_hDlgSettings, &m_Msg))
+		{
+			TranslateMessage(&m_Msg);	// setzt/fügt interne Param dazu
+			DispatchMessage(&m_Msg);	// ruft unsere Callback-Funktion auf 
+		}	
+		else
+		{
+			int i = 0;
+		}
+		//else
+		//{
+		//	int i = 0;
+		//}
 	}//END-WHILE send MSg to ClsWndProc::MsgProcRun
 	return TRUE;
 }//END-RunMessageLoop
@@ -193,10 +208,10 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 		break;
 		case WM_SIZE:
 		{			
-			UINT uiWidth = LOWORD(lParam);
-			UINT uiHeight = HIWORD(lParam);
+			//UINT uiWidth = LOWORD(lParam);
+			//UINT uiHeight = HIWORD(lParam);
 			
-			m_pClsD3D11Recording->ResizeWindow();
+			m_pClsD3D11Recording->AdjustRatio();
 			break;
 		}
 		case WM_COMMAND:
@@ -205,6 +220,15 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 			// Menüauswahl analysieren:
 			switch (wmId)
 			{
+			case IDM_WNDSIZE1:
+				m_pClsD3D11Recording->ZoomInOrOut(150);
+				break;
+			case IDM_WNDSIZE2:
+				m_pClsD3D11Recording->ZoomInOrOut(100);
+				break;
+			case IDM_WNDSIZE3:
+				m_pClsD3D11Recording->ZoomInOrOut(50);
+				break;
 			case IDM_RECORDSTART:
 				m_pClsD3D11Recording->PrepareRecording();
 				break;
@@ -227,8 +251,23 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 					m_hWnd,									// Window Handle
 					&ClsWnd::About);						// Callback Function
 				break;
+			case IDM_SETTINGS:
+				/*DialogBox(
+					m_hInstance,							// current Application Handle for the OS
+					MAKEINTRESOURCE(IDD_SETTINGS),			// Msg
+					m_hWnd,									// Window Handle
+					&ClsWnd::Settings);						// Callback Function*/
+				if (!IsWindow(m_hDlgSettings))
+				{
+					m_hDlgSettings = CreateDialog(GetModuleHandle(NULL), MAKEINTRESOURCE(IDD_SETTINGS),
+						m_hWnd, &ClsWnd::Settings);
+					ShowWindow(m_hDlgSettings, SW_SHOW);
+				}
+				break;
 			case IDM_EXIT:
 				DestroyWindow(m_hWnd);
+				DestroyWindow(m_hDlgSettings);
+				PostQuitMessage(0);
 				break;
 			default:
 				return DefWindowProc(m_hWnd, uiMsg, wParam, lParam);
@@ -266,6 +305,71 @@ INT_PTR CALLBACK ClsWnd::About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lP
 	}
 	return (INT_PTR)FALSE;
 }//END-FUNC
+INT_PTR  CALLBACK ClsWnd::Settings(HWND hDialog, UINT uiMsg, WPARAM wParam, LPARAM lParam)
+{
+	HWND hEditControlFPS = NULL;
+	HWND hCheckAudio = NULL;
+	TCHAR wsEditControl[1024];
+	switch (uiMsg)
+	{
+	case WM_INITDIALOG:
+		return (INT_PTR)TRUE;
+
+	case WM_COMMAND:
+		switch (LOWORD(wParam))
+		{
+			/*case IDC_EDIT1:
+				if (HIWORD(wParam) == EN_KILLFOCUS)
+				{
+					MessageBox(hWnd, L"edit!", L"This is a message",
+						MB_OK | MB_ICONEXCLAMATION);
+				}
+				break;*/
+			case IDOK:
+			{
+				hEditControlFPS = GetDlgItem(hDialog, IDC_EDIT1); 
+				GetWindowText(hEditControlFPS, wsEditControl, 1024);
+				UINT uiFPS = _wtoi(wsEditControl);
+				if (uiFPS <= 0)
+					uiFPS = 25;
+				m_pClsD3D11Recording->SetFPS(uiFPS);
+
+				//hCheckAudio = GetDlgItem(hDialog, IDC_CHECKAUDIO);
+				UINT uiIsChecked = IsDlgButtonChecked(hDialog, IDC_CHECKAUDIO);
+				if (uiIsChecked == BST_UNCHECKED)
+					m_pClsD3D11Recording->SetAudio(FALSE);
+				else
+					m_pClsD3D11Recording->SetAudio(TRUE);
+				EndDialog(hDialog, 0);
+				// m_hDlgSettings  is still the same as hDialog but lost scope
+				m_hDlgSettings = NULL;
+				return TRUE;
+			}
+				break;
+			case IDCANCEL:
+				MessageBox(hDialog, L"Bye!", L"This is also a message",
+					MB_OK | MB_ICONEXCLAMATION);
+				EndDialog(hDialog, 0);
+				// m_hDlgSettings  is still the same as hDialog but lost scope
+				m_hDlgSettings = NULL;
+				return TRUE;
+				break;
+			return (INT_PTR)TRUE;
+		}
+		break;
+
+	case WM_CLOSE:
+	case WM_DESTROY:
+
+		EndDialog(hDialog, 0); // EndDialog() shuts down a dialog boxes' DialogProc()
+						  // The second parameter is the "return code" to send
+						 // saying if the process was successful or not.  
+
+		return (INT_PTR)TRUE; // We processed, so we return true
+
+	}
+	return (INT_PTR)FALSE;
+}
 /// <summary>
 /// Creates a simple Menu.
 /// - Needs a valid WindowHandle to identify the Window

@@ -11,6 +11,8 @@ namespace GDI
 	{
 	public:
 		friend class ClsWinGDI;
+		friend class ClsCalcD3DWnd;
+		//friend class FrameData;
 	private:
 		BOOL m_bIsWnd;
 		HWND m_hWnd;

@@ -4,6 +4,7 @@
 // Singleton in ClsWndProc
 #include "ClsWndProc.h"
 #include "ClsWnd.h"
+
 //UINT ClsD3D11Recording::m_uiMaxMonitors = 0;
 /// <summary>
 /// WinMain Funktion
@@ -33,13 +34,15 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	myVideoDescriptor.bIsAudio = true;
 	myVideoDescriptor.strWndTitle = "Editor";
 	myVideoDescriptor.uiFPS = 60;
-	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
+	myVideoDescriptor.myCpyMethod = CopyMethod::DesktopDupl;
 	myVideoDescriptor.uiMonitorID = 1;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);
 	ClsWnd oMyWnd(											// führt CreateWindowEx aus, d.h. erzeugt Fenster die reg. sind. 
 															// WNDCLASS und Register wird bereits beim Start des Programms per Singleton ausgeführt
 		L"MyProgramm", &myClsD3D11Recording);				// Titel
+	
+
 	oMyWnd.SetVisibility(true);								// Fenster sichtbar machen
 	myClsD3D11Recording.Init3DWindow();
 	//myClsD3D11Recording.SetRecordingStatus(true);

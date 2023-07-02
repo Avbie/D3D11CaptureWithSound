@@ -1,4 +1,9 @@
 #include "ClsCoreAudio.h"
+
+using namespace Microsoft::WRL;
+using namespace ABI::Windows::Foundation;
+using Microsoft::WRL::ComPtr;
+
 /**********static Definitions*********/
 UINT32 ClsCoreAudio::m_uiNumFrames = 0;
 UINT32 ClsCoreAudio::m_uiPacketLength = 0;
@@ -264,7 +269,8 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
         // keep the total Number of Frames in the Rebuffer
         uiFramesInReBuffer = uiFramesInReBuffer + m_uiNumFrames;
         // must be released befor we can call GetBuffer again
-        m_pCaptureClient->ReleaseBuffer(m_uiNumFrames);
+        HR_RETURN_ON_ERR(hr, ReleaseBuffer());
+        //m_pCaptureClient->ReleaseBuffer(m_uiNumFrames);
     }//END-WHILE Frames
    
     // allocate the Bytes of AudioFrames that are needed for one VideoFrame
@@ -272,7 +278,7 @@ HRESULT ClsCoreAudio::ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFP
     // Gets the Data of Audio for exactly one VideoFrame
     m_myRebuffer.PopX(*pAudioData, static_cast<UINT64>(uiAudioFramesPerVidFrame) * static_cast<UINT64>(uiAFrameSize));
     *pBufferSize = uiAudioFramesPerVidFrame * uiAFrameSize;
-    HR_RETURN_ON_ERR(hr, ReleaseBuffer());
+    //HR_RETURN_ON_ERR(hr, ReleaseBuffer());
     return hr;
 }//END-FUNC
 /// <summary>

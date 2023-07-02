@@ -10,9 +10,13 @@ public:
 		HMENU hFileM = CreateMenu();
 		HMENU hRecord = CreateMenu();
 		HMENU hVidSrc = CreateMenu();
+		HMENU hSettings = CreateMenu();
+		HMENU hWndSize = CreateMenu();
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hFileM, L"File");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hRecord, L"Capture");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hVidSrc, L"Pick Monitor");
+		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSettings, L"Settings");
+		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hWndSize, L"Fenstergröße zur Quelle");
 		AppendMenu(hFileM, MF_STRING, 1, L"New");
 		AppendMenu(hFileM, MF_STRING, IDM_ABOUT, L"About");
 		AppendMenu(hRecord, MF_STRING, IDM_RECORDSTART, L"Start");
@@ -20,6 +24,12 @@ public:
 		AppendMenu(hVidSrc, MF_STRING, IDM_MONMAIN, L"MainMonitor");
 		AppendMenu(hVidSrc, MF_STRING, IDM_MON1, L"Monitor 1");
 		AppendMenu(hVidSrc, MF_STRING, IDM_WINDOW, L"Window");
+		AppendMenu(hSettings, MF_STRING, IDM_SETTINGS, L"Settings");
+
+		AppendMenu(hWndSize, MF_STRING, IDM_WNDSIZE1, L"150%");
+		AppendMenu(hWndSize, MF_STRING, IDM_WNDSIZE2, L"100%");
+		AppendMenu(hWndSize, MF_STRING, IDM_WNDSIZE3, L"50%");
+
 		SetMenu(hWnd, hMenu);
 	}
 	friend class ClsWnd;
