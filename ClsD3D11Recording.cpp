@@ -38,8 +38,10 @@ ClsD3D11Recording::ClsD3D11Recording(VideoDescriptor* pVidDesc)
 	SinkWriter().CalcDurationVid();
 	SinkWriter().PrepareAudio();
 	WinGDI().SetFrameData(&m_pFrameData);
-	WinGDI().SetSrcWndTitle(m_pVidDesc->strWndTitle);
+	//WinGDI().SetSrcWndTitle(m_pVidDesc->strWndTitle);
+	WinGDI().CreateWindowList();
 	WinGDI().SetWndAsSrc(FALSE);
+	CreateWindowList();
 	D3D11().SetFrameData(&m_pFrameData);
 	SinkWriter().SetFormats(m_pVidDesc->myInputFormat, m_pVidDesc->myOutputFormat);
 	SinkWriter().SetBitReading(m_pVidDesc->myBitReading);
@@ -71,6 +73,14 @@ void ClsD3D11Recording::AdjustRatio()
 	D3D11().AdjustD3D11Ratio();
 }//END-FUNC
 /// <summary>
+/// Creates a List of Window that are visible and open
+/// CalledBy: Constructor
+/// </summary>
+void ClsD3D11Recording::CreateWindowList()
+{
+	WinGDI().CreateWindowList();
+}//END-FUNC
+/// <summary>
 /// Tells the Sinkwriter to stop recording Frames
 /// </summary>
 void ClsD3D11Recording::Finalize()
@@ -80,6 +90,14 @@ void ClsD3D11Recording::Finalize()
 		SinkWriter().StopRecording();
 		SetRecordingStatus(false);
 	}
+}//END-FUNC
+/// <summary>
+/// Gets the current List of window that are visible and open
+/// </summary>
+/// <returns>List of Windows</returns>
+vector<GDI::ActiveWnd>* ClsD3D11Recording::GetWindowList()
+{
+	return WinGDI().GetWindowList();
 }//END-FUNC
 /// <summary>
 /// Init. the D3D11-Window
@@ -134,7 +152,7 @@ void ClsD3D11Recording::PrepareRecording()
 		D3D11().CreateShaderView();							// need new bind to the new created Texture
 		AdjustRatio();										// Adjust the Ratio for the presentation
 		
-		WinGDI().SetSrcWndTitle(m_pVidDesc->strWndTitle);
+		//WinGDI().SetSrcWndTitle(m_pVidDesc->strWndTitle);
 		WinGDI().FindSetWindow();							// may the Window changed
 
 		SinkWriter().CalcDurationVid();
@@ -150,6 +168,11 @@ void ClsD3D11Recording::PrepareRecording()
 		SyncFPS().Start();
 		SetRecordingStatus(true);
 	}
+}//END-FUNC
+void ClsD3D11Recording::SetActiveWindow(UINT uiWndNr)
+{
+	WinGDI().SetActiveWindow(uiWndNr);
+	AdjustRatio();											// Adjust the ratio for the ViewPort
 }//END-FUNC
 /// <summary>
 /// Enables or disables the audio

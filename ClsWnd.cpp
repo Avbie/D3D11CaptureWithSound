@@ -220,6 +220,15 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 			// Menüauswahl analysieren:
 			switch (wmId)
 			{
+			case IDM_WNDSET1:
+				m_pClsD3D11Recording->SetActiveWindow(1);
+				break;
+			case IDM_WNDSET2:
+				m_pClsD3D11Recording->SetActiveWindow(4);
+				break;
+			case IDM_WNDSET3:
+				m_pClsD3D11Recording->SetActiveWindow(5);
+				break;
 			case IDM_WNDSIZE1:
 				m_pClsD3D11Recording->ZoomInOrOut(150);
 				break;

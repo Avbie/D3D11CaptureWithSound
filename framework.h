@@ -23,15 +23,6 @@
 enum class CopyMethod { Mapping, D2D1Surface, SubResource, DesktopDupl };
 enum class PicDataBitReading { Invert, Standard };
 
-//#include "ClsWndHandle.h"
-//forward declaration
-//namespace GDI
-//{
-//	class ClsWndHandle;
-//}
-/// <summary>
-/// Container for transfering Data into Subclasses of the Superclass
-/// </summary>
 
 
 template <class T>
@@ -54,10 +45,13 @@ void SafeRelease(T** ppT)
 */
 
 #define WINSTYLE WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX
+// Bitflag ClsWinGDI FindSetWindow()
 #define NODESKDUPL 1
 #define SETWND 3
-#define WNDTITLESET 7
+#define WNDSET 7
 #define WNDFOUND 15
+// ClsWnGDI CollectOpenWndProc(...)
+#define WNDTITLESIZE 1024
 
 // Default Audio HardwareBuffer
 #define DEFAUDIOHWBUFFERSIZE 500000 

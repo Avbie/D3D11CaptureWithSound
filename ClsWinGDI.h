@@ -19,33 +19,38 @@ namespace GDI
 		const char* m_strTitle;
 		char* m_strBmpFileName;
 		FrameData* m_pFrameData;
-		
+		vector<ActiveWnd> m_vWndCollection;
 		
 		ClsScreenshot m_myClsScreenShot;
-		ClsWndHandle m_MyClsWndHandle;
+		ClsWndHandle m_myClsWndHandle;
 	public:
 		ClsWinGDI();
 		~ClsWinGDI();
 	public:
 		/******Get-Set-Methods********/
-		ClsScreenshot& ScreenShot();
+		
+		void SetActiveWindow(UINT uiWndNr);
 		//void SetCpyMethod(CopyMethod& myCpyMethod);
 		void SetFrameData(FrameData** pFrameData);
-		void SetSrcWndTitle(const char* strTitle);
+		//void SetSrcWndTitle(const char* strTitle);
 		void SetWndAsSrc(BOOL bWnd);
+		ClsScreenshot& ScreenShot();
+		vector<ActiveWnd>* GetWindowList();
 		/*****************************/
+		void CreateWindowList();
 		HRESULT FindSetWindow();
 		HRESULT GetBitBltDataFromWindow();
 		HRESULT TakeScreenshot();
 	private:
 		void ClearObjects();
+		static BOOL CALLBACK CreateWindowListProc(HWND hWnd, LPARAM lParam);
 		static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
 		BOOL IsScaled();
 		BOOL IsWnd();
-		BOOL IsWndTitle();
+		//BOOL IsWndSet();
 		
 		HRESULT AllocateMemDC();
 		HRESULT CopyBitmapDataToMemDC();
-		HRESULT GetResolutionOfWndHandle();
+		//HRESULT GetResolutionOfWndHandle();
 	};
 }

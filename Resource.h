@@ -24,6 +24,9 @@
 #define IDM_WNDSIZE1                    129
 #define IDM_WNDSIZE2                    130
 #define IDM_WNDSIZE3                    131
+#define IDM_WNDSET1		                132
+#define IDM_WNDSET2		                133
+#define IDM_WNDSET3		                134
 #define IDC_CHECKAUDIO                  1000
 #define IDC_EDIT1                       1001
 #define ID_SETTINGS_SETTINGS            32771

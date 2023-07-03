@@ -1,5 +1,7 @@
 #pragma once
 #include "framework.h"
+
+using namespace std;
 /// <summary>
 /// used in Callback ClsWinGDI::EnumWindowsProc as lParam
 /// Callback is called in EnumWindowProc
@@ -7,24 +9,27 @@
 /// </summary>
 namespace GDI
 {
+	struct ActiveWnd
+	{
+		HWND hWnd;
+		string sTitle;
+		DWORD dwProcessID;
+	};
 	class ClsWndHandle
 	{
 	public:
 		friend class ClsWinGDI;
 		friend class ClsCalcD3DWnd;
-		//friend class FrameData;
 	private:
-		BOOL m_bIsWnd;
-		HWND m_hWnd;
-		char* m_strTitle;
-		DWORD m_dwPid;
+		ActiveWnd m_myActiveWnd;
+		BOOL m_bIsWndSet;
 	public:
 		ClsWndHandle();
 	private:
-		void SetHandle(HWND hWnd);
-		void SetWndTitle(const char* strTitle);
-		BOOL CheckWnd();
+		void SetDesktop();
+		void SetActiveWnd(ActiveWnd myActivWnd);
+		BOOL IsWndSet();
 		HWND GetHandle();
-		char* GetWndTitle();
+		DWORD GetProcessID();
 	};
 }

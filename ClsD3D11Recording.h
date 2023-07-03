@@ -29,12 +29,12 @@ public:
 	CopyMethod myCpyMethod;
 	PicDataBitReading myBitReading;
 	const char* strFileName;
-	const char* strWndTitle;
+	//const char* strWndTitle;
 public:
 	VideoDescriptor()
 	{
 		bIsAudio = false;
-		strWndTitle = NULL;
+		//strWndTitle = NULL;
 		strFileName = NULL;
 		uiFPS = DEFFPS;
 		uiHeightDest = DEFHEIGHT;
@@ -136,10 +136,13 @@ public:
 	~ClsD3D11Recording();
 
 	void AdjustRatio();
+	void CreateWindowList();
 	void Finalize();
+	vector<GDI::ActiveWnd>* GetWindowList();
 	void Init3DWindow();
 	void Loop();
 	void PrepareRecording();
+	void SetActiveWindow(UINT uiWndNr);
 	void SetAudio(BOOL bAudio);
 	void SetFPS(UINT uiFPS);
 	void SetRecordingStatus(BOOL bRecord);

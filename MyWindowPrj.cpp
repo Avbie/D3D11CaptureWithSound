@@ -32,9 +32,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	// todo compilerwarnungen durchgehen
 	myVideoDescriptor.strFileName = "Output.mp4";
 	myVideoDescriptor.bIsAudio = true;
-	myVideoDescriptor.strWndTitle = "Editor";
+	//myVideoDescriptor.strWndTitle = "Editor";
 	myVideoDescriptor.uiFPS = 60;
-	myVideoDescriptor.myCpyMethod = CopyMethod::DesktopDupl;
+	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
 	myVideoDescriptor.uiMonitorID = 1;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);
