@@ -40,9 +40,9 @@ ClsSinkWriter::ClsSinkWriter()
     //m_pReadAudioBuffer;    
     
     // init. all in the same Thread: "Single threaded Apartment"
-    HR(CoInitialize(NULL));                            
+    HR2(CoInitialize(NULL));                            
     // init. Microsoft Media foundation
-    HR(MFStartup(MF_VERSION));
+    HR2(MFStartup(MF_VERSION));
 
     //m_myDataForAudioThread.hEventReadAudioHWBuffer = CreateEvent(NULL, FALSE, FALSE, NULL);
     m_myDataForAudioThread.pAudioData = &m_pAudioData;
@@ -202,7 +202,7 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoOut->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
     // 1. Pointer wo Attribute des IF gespeichert werden; 2. Welches Attribut; 3. 4. zusamm als 64bit value gespeichert
     HR_RETURN_ON_ERR(hr, MFSetAttributeSize(pMediaTypeVideoOut.Get(), MF_MT_FRAME_SIZE, uiWidthDest, uiHeightDest));
-    HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoOut.Get(), MF_MT_FRAME_RATE, *m_pFrameData->pFPS, 1));
+    HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoOut.Get(), MF_MT_FRAME_RATE, m_pFrameData->uiFPS, 1));
     // Verhältnis des Speicherplatzes  der zuvor gespeicherten Werte: FPS und Zeiteinheit
     // 1:1 heisst 32Bit und 32Bit
     HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoOut.Get(), MF_MT_PIXEL_ASPECT_RATIO, 1, 1));
@@ -230,7 +230,7 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetGUID(MF_MT_SUBTYPE, m_myInputFormat));
     HR_RETURN_ON_ERR(hr, pMediaTypeVideoIn->SetUINT32(MF_MT_INTERLACE_MODE, MFVideoInterlace_Progressive));
     HR_RETURN_ON_ERR(hr, MFSetAttributeSize(pMediaTypeVideoIn.Get(), MF_MT_FRAME_SIZE, uiWidthDest, uiHeightDest));
-    HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_FRAME_RATE, *m_pFrameData->pFPS, 1));
+    HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_FRAME_RATE, m_pFrameData->uiFPS, 1));
     HR_RETURN_ON_ERR(hr, MFSetAttributeRatio(pMediaTypeVideoIn.Get(), MF_MT_PIXEL_ASPECT_RATIO, 1, 1));
     HR_RETURN_ON_ERR(hr, m_pSinkWriter->SetInputMediaType(m_dwStreamIndexVidOut, pMediaTypeVideoIn.Get(), NULL));
 
@@ -257,6 +257,22 @@ HRESULT ClsSinkWriter::PrepareInputOutput()
 **************************************VIDEO-METHODES**********************************************
 *************************************************************************************************/
 /// <summary>
+/// Calculates the Duration of a VideoFrame
+/// </summary>
+void ClsSinkWriter::CalcDurationVid()
+{
+    m_lDurationVid = 1000 * 1000 * 10 / m_pFrameData->uiFPS;
+    m_myDataForAudioThread.uiFPS = &m_pFrameData->uiFPS;
+    //UINT64 b;
+    //MFFrameRateToAverageTimePerFrame(m_uiFPS, 1, &b);
+    //m_lDurationVid = b;
+    // Angabe in  Dauer in 100NanosekundenEinheiten
+    // Wieviele 100-NanosekundenEinheiten ein Bild angezeigt werden soll:
+    // 30FPS: 1/30 = 0,03Sekunden pro Bild
+    // 1000*1000*10/30  = 333.333  100-Nanosekundeneinheiten pro Bild
+    // 33.333.333Nanosekunden pro Bild = 0,03 Sekunden pro Bild 
+}//END-FUNC
+/// <summary>
 /// Set the BitRate of the VideoFile for the Sinkwriter
 /// </summary>
 /// <param name="uiBitRate"></param>
@@ -270,7 +286,7 @@ void ClsSinkWriter::SetBitRate()
 /// Sets the Bitreading method: Standard or Invert
 /// </summary>
 /// <param name="myBitReading"></param>
-void ClsSinkWriter::SetBitReading(PicDataBitReading myBitReading)
+void ClsSinkWriter::SetBitReading(const PicDataBitReading myBitReading)
 {
     m_myBitReading = myBitReading;
 }//END-FUNC
@@ -285,22 +301,12 @@ void ClsSinkWriter::SetFileName(const char* strFileName)
     mbstowcs_s(&uiWritten, m_wstrFilename, strlen(strFileName) + 1, strFileName, strlen(strFileName));
 }//END-FUNC
 /// <summary>
-/// Set the FPS of the VideoFile for the Sinkwriter
-/// </summary>
-/// <param name="uiFPS">FPS</param>
-/*
-void ClsSinkWriter::SetFPS(UINT32 uiFPS)
-{
-    m_uiFPS = uiFPS;
-    CalcDurationVid();
-}//END-FUNC*/
-/// <summary>
 /// Sets the Input and/or Output Format.
 /// When Parameter is NULL, nothing will change
 /// </summary>
 /// <param name="MyInputFormat">SinkWriter InputFormat</param>
 /// <param name="MyOutputFormat">SinkWriter OutputFormat</param>
-void ClsSinkWriter::SetFormats(GUID MyInputFormat, GUID MyOutputFormat)
+void ClsSinkWriter::SetFormats(const GUID MyInputFormat, const GUID MyOutputFormat)
 {
     m_myInputFormat = MyInputFormat;
     m_myOutputFormat = MyOutputFormat;
@@ -323,29 +329,13 @@ LONGLONG ClsSinkWriter::GetVideoFrameDuration()
     return m_lDurationVid / 10000;
 }//END-FUNC
 /// <summary>
-/// Calculates the Duration of a VideoFrame
-/// </summary>
-void ClsSinkWriter::CalcDurationVid()
-{
-    m_lDurationVid = 1000 * 1000 * 10 / *m_pFrameData->pFPS;
-    m_myDataForAudioThread.uiFPS = m_pFrameData->pFPS;
-    //UINT64 b;
-    //MFFrameRateToAverageTimePerFrame(m_uiFPS, 1, &b);
-    //m_lDurationVid = b;
-    // Angabe in  Dauer in 100NanosekundenEinheiten
-    // Wieviele 100-NanosekundenEinheiten ein Bild angezeigt werden soll:
-    // 30FPS: 1/30 = 0,03Sekunden pro Bild
-    // 1000*1000*10/30  = 333.333  100-Nanosekundeneinheiten pro Bild
-    // 33.333.333Nanosekunden pro Bild = 0,03 Sekunden pro Bild 
-}
-/// <summary>
 /// Flips the Frame.
 /// BMP-Data have to be readed from down to top.
 /// </summary>
 /// <param name="dwStride">Width*bpp</param>
 /// <param name="pFrameBuffer">Pointer Position Input</param>
 /// <param name="pPosition">Pointer Position Output</param>
-void ClsSinkWriter::FlipFormat(DWORD& dwStride, unsigned char* pFrameBuffer, BYTE** pPosition)
+void ClsSinkWriter::FlipFormat(DWORD& dwStride, const unsigned char* pFrameBuffer, BYTE** pPosition)
 {
     PicDataBitReading& myBitReading = m_myBitReading;
     UINT& uiHeightDest = m_pFrameData->uiHeightDest;
@@ -376,9 +366,7 @@ void ClsSinkWriter::FlipFormat(DWORD& dwStride, unsigned char* pFrameBuffer, BYT
 /// </summary>
 /// <param name="pFrameBuffer">Daten oeines Bildes/Frames</param>
 /// <returns></returns>
-HRESULT ClsSinkWriter::WriteVideoDataSample(
-    unsigned char* pFrameBuffer
-)
+HRESULT ClsSinkWriter::WriteVideoDataSample(const unsigned char* pFrameBuffer)
 {
     HRESULT hr = NULL;
     DWORD dwDataRow =  m_dwDataRow;                 // Referenz auf Wert des Pointers

@@ -104,5 +104,5 @@ private:
     static HRESULT ReadBuffer(BYTE** pAudioData, UINT* pBufferSize, UINT* pFPS);
     static HRESULT ReleaseBuffer();
     static DWORD WINAPI StartSilence(LPVOID pParm);
-    static DWORD Ns100UnitsInMs(double lValue); 
+    static DWORD Ns100UnitsInMs(const double lValue); 
 };

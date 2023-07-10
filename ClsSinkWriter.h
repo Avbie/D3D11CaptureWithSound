@@ -63,22 +63,20 @@ public:
     HRESULT PrepareInputOutput();
     /*********Video*******************/
 public: 
-    void SetBitRate();
-    void SetBitReading(PicDataBitReading myBitReading);     // Sets Type of PixelData Interpretation (Bmp: Last to First Line)
-    void SetFileName(const char* strFileName);
-    //void SetFPS(UINT32 uiFPS);
     void CalcDurationVid();
-    void SetFormats(GUID MyInputFormat, GUID MyOutputFormat);
+    void SetBitRate();
+    void SetBitReading(const PicDataBitReading myBitReading);     // Sets Type of PixelData Interpretation (Bmp: Last to First Line)
+    void SetFileName(const char* strFileName);
+    void SetFormats(const GUID MyInputFormat, const GUID MyOutputFormat);
     void SetFrameData(FrameData** pFrameData);              // FrameFormat Information Structure
     LONGLONG GetVideoFrameDuration();
 private:
     
-    void FlipFormat(DWORD& dwDataRow, unsigned char* pFrameBuffer, BYTE** pPosition);
-    HRESULT WriteVideoDataSample(unsigned char* pFrameBuffer);
+    void FlipFormat(DWORD& dwDataRow, const unsigned char* pFrameBuffer, BYTE** pPosition);
+    HRESULT WriteVideoDataSample(const unsigned char* pFrameBuffer);
     /*********Audio*******************/
 public:
     void PrepareAudio();
-    //void SetAudio(BOOL bAudio);
     HRESULT StartReadAudioHWBufferThread();
 private:
     void SetReadAudioHWBufferCallback(HRESULT(*pReadAudioBuffer)(BYTE**, UINT*, UINT*));

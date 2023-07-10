@@ -128,7 +128,7 @@ namespace GDI
 	/// <param name="hBitmap">HBitmap Bitmap im Memory</param>
 	/// <param name="uiWindowFlag">Flag ob Quelle Desktopduplication oder Fensterhandle ist</param>
 	/// <returns>HRESULT</returns>
-	HRESULT ClsScreenshot::BitBltToFile(HDC hMemDC, HBITMAP hBitmap, UINT uiWindowFlag)
+	HRESULT ClsScreenshot::BitBltToFile(const HDC hMemDC, const HBITMAP hBitmap, const UINT uiWindowFlag)
 	{
 		HRESULT hr = NULL;
 		HANDLE hFile = NULL;

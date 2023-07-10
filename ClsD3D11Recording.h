@@ -5,6 +5,9 @@
 #include "ClsWinGDI.h"
 #include "ClsD3D11.h"
 #include "ClsFpsSync.h"
+#include "ClsSupportedRes.h"
+#include "ClsMonitor.h"
+
 
 /// <summary>
 /// Enthält Metadaten für das Fenster: Höhe, Breite, Bpp, Handle, Titelname
@@ -29,7 +32,6 @@ public:
 	CopyMethod myCpyMethod;
 	PicDataBitReading myBitReading;
 	const char* strFileName;
-	//const char* strWndTitle;
 public:
 	VideoDescriptor()
 	{
@@ -47,79 +49,29 @@ public:
 	}
 };
 
-struct PerformanceCounter
+struct CpyMethodDescription
 {
-	LARGE_INTEGER start = { 0 };
-	LARGE_INTEGER end = { 0 };
-	LARGE_INTEGER interval = { 0 };
-	LARGE_INTEGER freq = { 0 };
+	CopyMethod m_myCpyMethod;
+	std::string m_sName;
+	std::string m_sDescription;
 };
-
-/// <summary>
-/// Used in the Enumation of Monitors in the MonitorEnum-CallbackFunction.
-/// In the Callback this struct will be set with the Data of a Monitor.
-/// It will be pushed into an Vector Array ClsD3D11Recording::m_vMonitors
-/// One VectorElement is one MonitorInfo Struct
-/// </summary>
-struct MonitorInfo
-{
-private:
-	BOOL m_bPrimary;
-	UINT m_uiWidth;
-	UINT m_uiHeight;
-	UINT m_uiTop;
-	UINT m_uiLeft;
-public:
-	// Höhe des Monitors
-	void SetHeight(UINT uiHeight)
-	{
-		m_uiHeight = uiHeight;
-	}
-	// Breite des Monitors
-	void SetWidth(UINT uiWidth)
-	{
-		m_uiWidth = uiWidth;
-	}
-	// Wann der Monitor innerhalb des virtuellen Monitors beginnt
-	void SetTop(UINT uiTop)
-	{
-		m_uiTop = uiTop;
-	}
-	// Wann der Monitor innerhalb des virtuellen Monitors beginnt
-	void SetLeft(UINT uiLeft)
-	{
-		m_uiLeft = uiLeft;
-	}
-	// Status des Monitors: Hauptmonitor oder nicht
-	void SetPrimaryStatus(DWORD dwPrimaryFlag)
-	{
-		if (dwPrimaryFlag == 1)
-			m_bPrimary = true;
-		else
-			m_bPrimary = false;
-	}
-	UINT GetHeight() { return m_uiHeight; }
-	UINT GetWidth() { return m_uiWidth; }
-	UINT GetTop() { return m_uiTop; }
-	UINT GetLeft() { return m_uiLeft; }
-};
-
 // SuperClass
 class ClsD3D11Recording
 {
 public:
 	friend class ClsWnd;
-	
 private:
 	HWND m_hWnd;
 	static UINT m_uiMaxMonitors;
-	UINT m_uiPickedMonitor;
+	UINT m_uiPickedMonitorIndex;
+	INT64 m_iPickedResIndex;
 	int m_iLeft;
 	int m_iTop;
 	int m_iXPos;
 	int m_iYPos;
+	float m_fZoomPercentage;
 	
-	RECT m_myClientRect;			// Client Area
+	//RECT m_myClientRect;			// Client Area
 	RECT m_myWndRect;
 	PicDataBitReading m_myBitReading;
 	VideoDescriptor* m_pVidDesc;
@@ -132,39 +84,60 @@ private:
 	ClsFPSSync m_myClsSyncFPS;
 	GDI::ClsWinGDI m_myClsWinGDI;
 public:
+	/**********PUBLIC-METHODS*********/
 	ClsD3D11Recording(VideoDescriptor* pVidDesc);
 	~ClsD3D11Recording();
-
-	void AdjustRatio();
-	void CreateWindowList();
-	void Finalize();
-	vector<GDI::ActiveWnd>* GetWindowList();
-	void Init3DWindow();
-	void Loop();
-	void PrepareRecording();
-	void SetActiveWindow(UINT uiWndNr);
+	/**********GET-METHODS************/
+	HWND GetActiveWindow();
+	const std::vector<SupportedResolution>& GetAllSupportedRes();
+	const UINT GetFPS();
+	const std::vector<MonitorInfo*>& GetMonitors();
+	const UINT GetSelectedIndexOfMonitorList();
+	const INT64 GetSelectedIndexOfResList();
+	const vector<GDI::ActiveWnd>& GetWindowList();
+	const FLOAT GetZoomFactor();
+	BOOL IsAudio();
+	/**********SET-METHODS************/
 	void SetAudio(BOOL bAudio);
-	void SetFPS(UINT uiFPS);
-	void SetRecordingStatus(BOOL bRecord);
-	void SetWndAsSrc();
-	void SetMonitorAsSrc(UINT uiMonitorID);
-	void ZoomInOrOut(float fPercentage);
-	BOOL IsRecording();
+	void SetFPS(const UINT uiFPS);
+	BOOL SetActiveWindow(const UINT uiWndNr);
+	BOOL SetDestResFromList(int iResIndexNr=DEFRES);
+	BOOL SetMonitor(const UINT uiMonitorID);
+	BOOL SetZoomFactor(const float fPercentage);
+	/**********RECORDING-METHODS******/
+	BOOL Loop();
+	BOOL StartRecording();
+	BOOL StopRecording();
+	/**********INITIALIZATION********/
+	BOOL CreateWindowList();
+	BOOL Init3DWindow();
+	HRESULT AdjustRatio(); // triggered by resizing the Window
 private:
+	/**********PRIVATE-METHODS********/
+	/**********SUB-OBJECTS************/
 	D3D::ClsD3D11& D3D11();
 	ClsSinkWriter& SinkWriter();
 	ClsFPSSync& SyncFPS();
 	GDI::ClsWinGDI& WinGDI();
+	/*********************************/
 	
-	void SetCpyMethod(CopyMethod* myCpyMethod);
-	void SetDestResolution(UINT uiWidthDest, UINT uiHeightDest);
+	//void CompareDestResWithResArray();
+	void MakeEqualResolution();
+	
+	void SetCpyMethod(CopyMethod myCpyMethod);
 	void SetHWND(HWND hWnd);
-	void SetSrcDisplay(UINT uiMonitorID);
-	void SetSrcResolution();
+	void SetRecordingStatus(BOOL bRecord);
+	
 	void SetWindowPosition();
 	void SetWindowRect();
+
 	BOOL IsDesktopDupl();
-	static BOOL CALLBACK MonitorEnum(HMONITOR hMonitor, HDC hdc, LPRECT lprcMonitor, LPARAM pData);
+	BOOL IsRecording();
+	BOOL ReCreateFrameBuffer();
+	BOOL RefreshDestResolution(int iResIndexNr = DEFRES);
+	BOOL SetSrcDisplay(const UINT uiMonitorID);
+	BOOL SetSrcResolution();
+	
 	UINT GetWndXSize();
 	UINT GetWndYSize();
 	UINT GetXPos();

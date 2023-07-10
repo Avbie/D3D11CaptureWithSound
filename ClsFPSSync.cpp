@@ -15,7 +15,7 @@ ClsFPSSync::ClsFPSSync()
 /// CalledBy: ClsD3D11Recording::ClsD3D11Recording
 /// </summary>
 /// <param name="lDurInMilliSeconds"></param>
-void ClsFPSSync::SetFrameDuaration(LONGLONG lDurInMilliSeconds)
+void ClsFPSSync::SetFrameDuaration(const LONGLONG lDurInMilliSeconds)
 {
     m_lDuration = lDurInMilliSeconds;
 }//END-FUNC

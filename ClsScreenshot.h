@@ -26,7 +26,7 @@ namespace GDI
 		void CreateBmpFileHeader();
 		void GenerateBitBltData();
 		void SetFrameData(FrameData** pFrameData);
-		HRESULT BitBltToFile(HDC hMemDC, HBITMAP hBitmap, UINT uiWindowFlag);
+		HRESULT BitBltToFile(const HDC hMemDC, const HBITMAP hBitmap, const UINT uiWindowFlag);
 		
 	};
 }

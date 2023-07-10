@@ -55,7 +55,7 @@ void ClsSilence::DeviceCollection(ComPtr<IMMDeviceEnumerator> pEnumerator)
 /// Called by: ClsCoreAudio::StartStream() ---> Called by created Thread
 /// </summary>
 /// <param name="lParm">EventHandle from the MainThread</param>
-HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
+HRESULT ClsSilence::BlankAudioPlayback(const void* lParm)
 {
     BOOL bStartEvent = false;
     HRESULT hr = NULL;
@@ -191,7 +191,7 @@ HRESULT ClsSilence::BlankAudioPlayback(void* lParm)
 /// <param name="pwfx">WaveFormat</param>
 /// <param name="outFlags">returned Flags</param>
 /// <returns>HRESULT</returns>
-HRESULT ClsSilence::LoadAudioBuffer(UINT32 bufferFrameCount, BYTE* pData, WAVEFORMATEX* pWaveFormat, DWORD* dwFlags)
+HRESULT ClsSilence::LoadAudioBuffer(const UINT32 bufferFrameCount, const BYTE* pData, const WAVEFORMATEX* pWaveFormat, DWORD* dwFlags)
 {
     double dFrequency = 1700;		// 1.7 kHz
     double dNumChannels = 2;

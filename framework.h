@@ -47,9 +47,9 @@ void SafeRelease(T** ppT)
 #define WINSTYLE WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SIZEBOX
 // Bitflag ClsWinGDI FindSetWindow()
 #define NODESKDUPL 1
-#define SETWND 3
-#define WNDSET 7
-#define WNDFOUND 15
+//#define SETWND 3
+//#define WNDSET 3
+#define WNDFOUND 3
 // ClsWnGDI CollectOpenWndProc(...)
 #define WNDTITLESIZE 1024
 
@@ -61,6 +61,7 @@ void SafeRelease(T** ppT)
 #define DEFFPS 25
 // Default Monitor
 #define MAINMONITOR 0
+#define DEFRES -1
 // Default CopyMethod of Source Picture/Window
 #define DEFCPYMETHOD CopyMethod::DesktopDupl
 // ScreenshotName
@@ -94,6 +95,17 @@ void SafeRelease(T** ppT)
  if(FAILED(hr)) \
  { \
 	DXTraceW(__FILEW__,__LINE__,hr,L#x, TRUE); \
+	return FALSE; \
+ } \
+}
+
+#define HR2(x) \
+{ \
+ HRESULT hr = x; \
+ if(FAILED(hr)) \
+ { \
+	DXTraceW(__FILEW__,__LINE__,hr,L#x, TRUE); \
+	return; \
  } \
 }
 #endif
@@ -124,6 +136,8 @@ void SafeRelease(T** ppT)
 #include <dwmapi.h>  // dwm map window
 #include <cmath>
 #include <string.h>
+#include <algorithm>    // std::sort
+
 // Windows ComPtr
 #include <wrl.h>
 #include <wrl/client.h>

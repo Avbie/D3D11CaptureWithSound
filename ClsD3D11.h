@@ -70,11 +70,14 @@ namespace D3D
 		ClsD3D11();
 		~ClsD3D11();
 	public:
+		/**********Get-Set-Methods****/
 		void SetFrameData(FrameData** pFrameData);
 		void SetWnd(HWND hWnd);
-		HRESULT SetZoomPercentage(float fZoomPercentage);
+		HRESULT SetZoomPercentage(const float fZoomPercentage);
+		/*****************************/
+		BOOL IsDevice();
+		BOOL IsContextAndSwapChain();
 		HRESULT AdjustD3D11Ratio();
-		//HRESULT AdjustWindowSize(UINT uiPercentage);
 		HRESULT BitBltDataToRT();
 		HRESULT CreateAndSetSampler();
 		HRESULT CreateAndSetShader();

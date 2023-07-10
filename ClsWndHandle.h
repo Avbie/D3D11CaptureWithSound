@@ -14,6 +14,12 @@ namespace GDI
 		HWND hWnd;
 		string sTitle;
 		DWORD dwProcessID;
+		ActiveWnd()
+		{
+			hWnd = NULL;
+			sTitle = "";
+			dwProcessID = -1;
+		}
 	};
 	class ClsWndHandle
 	{
@@ -22,14 +28,11 @@ namespace GDI
 		friend class ClsCalcD3DWnd;
 	private:
 		ActiveWnd m_myActiveWnd;
-		BOOL m_bIsWndSet;
 	public:
 		ClsWndHandle();
+		HWND GetWndHandle();
 	private:
-		void SetDesktop();
-		void SetActiveWnd(ActiveWnd myActivWnd);
-		BOOL IsWndSet();
-		HWND GetHandle();
-		DWORD GetProcessID();
+		void SetActiveWnd(const ActiveWnd myActivWnd);
+		const DWORD GetProcessID();
 	};
 }

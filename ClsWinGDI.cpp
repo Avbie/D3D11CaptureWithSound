@@ -26,41 +26,47 @@ namespace GDI
 		ClearObjects();
 	}//END-CONS
 	/**********Get-Set-Methoden*******/
-	void ClsWinGDI::SetActiveWindow(UINT uiWndNr)
-	{
-		UINT uiSize = m_vWndCollection.size();
-
-		if (uiSize <= 0)
-			return;
-		if (uiWndNr < 0 || uiWndNr > uiSize)
-			return;
-
-		m_myClsWndHandle.SetActiveWnd(m_vWndCollection[uiWndNr]);
-		FindSetWindow();
-	}
 	void ClsWinGDI::SetFrameData(FrameData** ppFrameData)
 	{
 		m_pFrameData = *ppFrameData;
 		ScreenShot().SetFrameData(ppFrameData);
 	}//END-FUNC
-	void ClsWinGDI::SetWndAsSrc(BOOL bWnd)
+	BOOL ClsWinGDI::SetActiveWindow(const UINT uiWndNr)
 	{
-		m_pFrameData->bWndAsSrc = bWnd;
-	}
+		size_t uiSize = m_vWndCollection.size();
+
+
+		if (uiSize <= 0 || (uiWndNr < 0 || uiWndNr > uiSize))
+		{
+			//m_myClsWndHandle.SetActiveWnd(m_vWndCollection[0]);
+			return FALSE;
+		}//END-IF window not set
+		else
+		{
+			m_myClsWndHandle.SetActiveWnd(m_vWndCollection[uiWndNr]);
+			return TRUE;
+		}//END-ELSE  window set
+	}//END-FUNC
 	ClsScreenshot& ClsWinGDI::ScreenShot()
 	{
 		return m_myClsScreenShot;
 	}//END-FUNC
-	vector<ActiveWnd>* ClsWinGDI::GetWindowList()
+	const vector<ActiveWnd>& ClsWinGDI::GetWindowList()
 	{
-		return &m_vWndCollection;
+		return m_vWndCollection;
+	}
+	ClsWndHandle& ClsWinGDI::WndHandle()
+	{
+		return m_myClsWndHandle;
 	}
 	/*********************************/
-	void ClsWinGDI::CreateWindowList()
+	HRESULT ClsWinGDI::CreateWindowList()
 	{
 		m_vWndCollection.clear();
-		EnumWindows(CreateWindowListProc, reinterpret_cast<LPARAM>(&m_vWndCollection));
-	}
+		HR_RETURN_ON_NULL_ERR(EnumWindows(CreateWindowListProc, reinterpret_cast<LPARAM>(&m_vWndCollection)));
+
+		return S_OK;
+	}//END_FUNC
 	/// <summary>
 	/// Sets the Window-handle depending on the Window-Title
 	/// It is the Window that we want to record
@@ -77,39 +83,10 @@ namespace GDI
 
 		if (*m_pFrameData->pCpyMethod != CopyMethod::DesktopDupl)
 			m_uiWindowFlag = m_uiWindowFlag | 0b0001;
-
 		// DesktopDupl
 		if (m_uiWindowFlag == 0)
-		{
-			//m_myClsWndHandle.SetWndTitle(DESKTOP);			// Title of the Window
-			m_myClsWndHandle.SetDesktop();
 			return S_OK;
-		}
-		if (IsWnd())
-		{
-			m_uiWindowFlag = m_uiWindowFlag | 0b0010;		// Bitflag for Window
-		}//END-iF
-		if (m_myClsWndHandle.IsWndSet())
-		{
-			m_uiWindowFlag = m_uiWindowFlag | 0b0100;		// Bitflag for WindowTitle
-		}//END-IF
-		/*
-		* Will enter the if case with
-		* 1 = No Wnd, No Title
-		* 3 = Wnd, No Title
-		* 5 = No Wnd, Title
-		*/
-		if (m_uiWindowFlag < WNDSET)
-		{
-			//m_myClsWndHandle.SetWndTitle(DESKTOP);			// DESKTOP
-			m_myClsWndHandle.SetDesktop();
-			m_hDisplayDC = GetDC(NULL);						// DC of the Window, whole Desktop
-			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
-			HR_RETURN_ON_ERR(hr, AllocateMemDC());
-
-			return S_OK;
-		}//END-IF
-		if (m_uiWindowFlag == WNDSET)					// Looking for Window with set Title
+		if (m_uiWindowFlag == NODESKDUPL)					// Looking for Window with set Title
 		{
 			// compares the processID of our set window with the valid windows
 			// If EnumWindowsProc returns FALSE (processID is valid)
@@ -117,16 +94,16 @@ namespace GDI
 			if (!EnumWindows(
 				EnumWindowsProc,
 				reinterpret_cast<LPARAM>(&m_myClsWndHandle)))
-				m_uiWindowFlag = m_uiWindowFlag | 0b1000;	// Bitflag for Window found
+				m_uiWindowFlag = m_uiWindowFlag | 0b0010;	// Bitflag for Window found
 		}//END-IF WNDTITLESET
 		if (m_uiWindowFlag == WNDFOUND)
 		{
-			m_hDisplayDC = GetDC(m_myClsWndHandle.GetHandle());	// DC of the WndHandle
+			m_hDisplayDC = GetDC(m_myClsWndHandle.GetWndHandle());	// DC of the WndHandle
 			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
 			HR_RETURN_ON_ERR(hr, AllocateMemDC());			// compatible MemDC with a HBitmap that has the specific destination size
 
 			HR_RETURN_ON_INT_ERR(GetClientRect(
-				m_myClsWndHandle.GetHandle(), &myClientRectSrcWnd));	// keep the size of the window
+				m_myClsWndHandle.GetWndHandle(), &myClientRectSrcWnd));	// keep the size of the window
 			m_pFrameData->uiWidthSrc = myClientRectSrcWnd.right - myClientRectSrcWnd.left;
 			m_pFrameData->uiHeightSrc = myClientRectSrcWnd.bottom - myClientRectSrcWnd.top;
 			m_pFrameData->uiTop = 0;
@@ -134,7 +111,6 @@ namespace GDI
 		}//END-IF Wnd-Handle
 		else 
 		{
-			m_myClsWndHandle.SetDesktop();
 			m_hDisplayDC = GetDC(NULL);						// DC of the Window, whole Desktop
 			HR_RETURN_ON_NULL_ERR(m_hDisplayDC);
 			HR_RETURN_ON_ERR(hr, AllocateMemDC());
@@ -198,7 +174,7 @@ namespace GDI
 	{
 		DeleteObject(m_hMemDC);
 		DeleteObject(m_hBitmap);
-		ReleaseDC(m_myClsWndHandle.GetHandle(), m_hDisplayDC);
+		ReleaseDC(m_myClsWndHandle.GetWndHandle(), m_hDisplayDC);
 		ReleaseDC(NULL, m_hDisplayDC);
 		m_uiWindowFlag = 0;
 	}//END-FUNC
@@ -209,7 +185,7 @@ namespace GDI
 	/// </summary>
 	/// <param name="hWnd">current hwnd by EnumWindowProc</param>
 	/// <param name="lparam">not used</param>
-	/// <returns></returns>
+	/// <returns>always true</returns>
 	BOOL CALLBACK ClsWinGDI::CreateWindowListProc(HWND hWnd, LPARAM lParam)
 	{
 		DWORD dwProcessID = 0;
@@ -224,8 +200,7 @@ namespace GDI
 
 		if (GetWindowTextLength(hWnd) == 0)
 			return TRUE;
-
-		GetWindowText(hWnd, wstrCurTitle, sizeof(WNDTITLESIZE));
+		GetWindowText(hWnd, wstrCurTitle, WNDTITLESIZE);
 		wsCurTitle.assign(wstrCurTitle);
 		sCurTitle.assign(wsCurTitle.begin(), wsCurTitle.end());
 
@@ -269,14 +244,10 @@ namespace GDI
 	BOOL ClsWinGDI::IsScaled()
 	{
 		if (m_pFrameData->uiHeightDest != m_pFrameData->uiHeightSrc)
-			return true;
+			return TRUE;
 		if (m_pFrameData->uiWidthDest != m_pFrameData->uiWidthSrc)
-			return true;
-		return false;
-	}//END-FUNC
-	BOOL ClsWinGDI::IsWnd()
-	{
-		return m_pFrameData->bWndAsSrc;
+			return TRUE;
+		return FALSE;
 	}//END-FUNC
 	/// <summary>
 	/// Allocate Memory für ein MemoryDC, allocate a hBitmap

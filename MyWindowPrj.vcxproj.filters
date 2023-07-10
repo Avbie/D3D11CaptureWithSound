@@ -135,6 +135,12 @@
     <ClInclude Include="ClsCalcViewPort.h">
       <Filter>Headerdateien\D3D11</Filter>
     </ClInclude>
+    <ClInclude Include="ClsSupportedRes.h">
+      <Filter>Headerdateien\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="ClsMonitor.h">
+      <Filter>Headerdateien\Window</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MyWindowPrj.cpp">
@@ -184,6 +190,12 @@
     </ClCompile>
     <ClCompile Include="ClsCalcViewPort.cpp">
       <Filter>Quelldateien\WinGDI</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsSupportedRes.cpp">
+      <Filter>Quelldateien\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="ClsMonitor.cpp">
+      <Filter>Quelldateien\Window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

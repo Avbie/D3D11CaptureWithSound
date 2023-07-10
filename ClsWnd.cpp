@@ -220,38 +220,47 @@ LRESULT ClsWnd::ProcessTriggeredMsg(HWND hWnd, UINT uiMsg, WPARAM wParam, LPARAM
 			// Menüauswahl analysieren:
 			switch (wmId)
 			{
+			case IDM_RES1:
+				m_pClsD3D11Recording->SetDestResFromList(0);
+				break;
+			case IDM_RES2:
+				m_pClsD3D11Recording->SetDestResFromList(20);
+				break;
+			case IDM_RES3:
+				m_pClsD3D11Recording->SetDestResFromList(40);
+				break;
 			case IDM_WNDSET1:
-				m_pClsD3D11Recording->SetActiveWindow(1);
+				m_pClsD3D11Recording->SetActiveWindow(0);
 				break;
 			case IDM_WNDSET2:
-				m_pClsD3D11Recording->SetActiveWindow(4);
+				m_pClsD3D11Recording->SetActiveWindow(1);
 				break;
 			case IDM_WNDSET3:
-				m_pClsD3D11Recording->SetActiveWindow(5);
+				m_pClsD3D11Recording->SetActiveWindow(3);
 				break;
 			case IDM_WNDSIZE1:
-				m_pClsD3D11Recording->ZoomInOrOut(150);
+				m_pClsD3D11Recording->SetZoomFactor(150);
 				break;
 			case IDM_WNDSIZE2:
-				m_pClsD3D11Recording->ZoomInOrOut(100);
+				m_pClsD3D11Recording->SetZoomFactor(100);
 				break;
 			case IDM_WNDSIZE3:
-				m_pClsD3D11Recording->ZoomInOrOut(50);
+				m_pClsD3D11Recording->SetZoomFactor(50);
 				break;
 			case IDM_RECORDSTART:
-				m_pClsD3D11Recording->PrepareRecording();
+				m_pClsD3D11Recording->StartRecording();
 				break;
 			case IDM_RECORDSTOP:
-				m_pClsD3D11Recording->Finalize();
+				m_pClsD3D11Recording->StopRecording();
 				break;
 			case IDM_MONMAIN:
-				m_pClsD3D11Recording->SetMonitorAsSrc(MAINMONITOR);
+				m_pClsD3D11Recording->SetMonitor(MAINMONITOR);
 				break;
 			case IDM_MON1:
-				m_pClsD3D11Recording->SetMonitorAsSrc(1);
+				m_pClsD3D11Recording->SetMonitor(1);
 				break;
 			case IDM_WINDOW:
-				m_pClsD3D11Recording->SetWndAsSrc();
+				//m_pClsD3D11Recording->SetWndAsSrc();
 				break;
 			case IDM_ABOUT:
 				DialogBox(

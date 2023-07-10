@@ -29,6 +29,6 @@ public:
     friend class ClsCoreAudio; 
 private:
     void DeviceCollection(ComPtr<IMMDeviceEnumerator> pEnumerator);
-    HRESULT BlankAudioPlayback(void* lParm);
-    HRESULT LoadAudioBuffer(UINT32 bufferFrameCount, BYTE* pData, WAVEFORMATEX* pwfx, DWORD* outFlags);
+    HRESULT BlankAudioPlayback(const void* lParm);
+    HRESULT LoadAudioBuffer(const UINT32 bufferFrameCount, const BYTE* pData, const WAVEFORMATEX* pwfx, DWORD* dwFlags);
 };

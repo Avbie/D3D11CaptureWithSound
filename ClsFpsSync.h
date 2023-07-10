@@ -17,7 +17,7 @@ private:
 public:
     ClsFPSSync();
 public:
-    void SetFrameDuaration(LONGLONG lDurInMilliSeconds);
+    void SetFrameDuaration(const LONGLONG lDurInMilliSeconds);
     void SleepUntilNextFrame();
     void Start();
     void operator ++();

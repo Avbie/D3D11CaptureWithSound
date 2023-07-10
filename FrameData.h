@@ -11,7 +11,7 @@ public:
 		bWndAsSrc = FALSE;
 		pIsAudio = FALSE;
 		uiBpp = 0;
-		pFPS = NULL;
+		uiFPS = DEFFPS;
 		uiHeightDest = 0; // Target Res for Sinkwriter e.g. 2560x1440
 		uiWidthDest = 0;
 		uiHeightSrc = 0;	// SourceResolution of the Source e.g. Monitor 1920x1080
@@ -30,7 +30,7 @@ public:
 	BOOL bWndAsSrc;
 	BOOL* pIsAudio;
 	UINT uiBpp;
-	UINT* pFPS;
+	UINT uiFPS;
 	UINT uiHeightDest; // Target Res for Sinkwriter e.g. 2560x1440
 	UINT uiWidthDest;
 	UINT uiHeightSrc;	// SourceResolution of the Source e.g. Monitor 1920x1080

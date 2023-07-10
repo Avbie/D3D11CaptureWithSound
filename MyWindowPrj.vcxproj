@@ -152,9 +152,11 @@
     <ClInclude Include="ClsD2D1.h" />
     <ClInclude Include="ClsD3D11Recording.h" />
     <ClInclude Include="ClsFPSSync.h" />
+    <ClInclude Include="ClsMonitor.h" />
     <ClInclude Include="ClsScreenshot.h" />
     <ClInclude Include="ClsSilence.h" />
     <ClInclude Include="ClsSinkWriter.h" />
+    <ClInclude Include="ClsSupportedRes.h" />
     <ClInclude Include="ClsTimer.h" />
     <ClInclude Include="ClsWinGDI.h" />
     <ClInclude Include="ClsD3D11.h" />
@@ -174,6 +176,8 @@
     <ClCompile Include="ClsCalcViewPort.cpp" />
     <ClCompile Include="ClsD3D11Recording.cpp" />
     <ClCompile Include="ClsFPSSync.cpp" />
+    <ClCompile Include="ClsMonitor.cpp" />
+    <ClCompile Include="ClsSupportedRes.cpp" />
     <ClCompile Include="ClsWinGDI.cpp" />
     <ClCompile Include="ClsCoreAudio.cpp" />
     <ClCompile Include="ClsD2D1.cpp" />

@@ -15,7 +15,6 @@ namespace D3D
 	ClsD3D11::ClsD3D11()
 	{
 		m_hWnd = NULL;
-		//m_myClientRect = {};
 		m_pFrameData = NULL;
 
 		// Device, Factory, SwapChain
@@ -90,9 +89,58 @@ namespace D3D
 	{
 		return m_myClsCalcViewPort;
 	}
+	/// <summary>
+	/// Sets the zoom factor per function on GPU-Side
+	/// Setting the Constont buffer can be done every frame.
+	/// Much faster instead setting the coordinates of the texture itself.
+	/// </summary>
+	/// <param name="fZoomPercentage">Zoom factor in percentage</param>
+	/// <returns>HRESULT</returns>
+	HRESULT ClsD3D11::SetZoomPercentage(const float fZoomPercentage)
+	{
+		HRESULT hr = NULL;
+		float fZoom = fZoomPercentage / 100;
+		m_myConstantBuffer.myConstantBuffer =
+		{
+			{
+				// EinheitsMatrix, keine Veränderung pro Frame
+				// Constant Buffer (Funktion) kann pro Frame an GPU gesendet werden
+				// 4x4 Matrix
+				// 1. x-Koord
+				// 2. y-Koord
+				// 3. z-Koord: keine Änderung, d.h. Einheitswerte
+				// 4. für Mondifikation: keine Änderung, d.h. Einheitswerte
+				// 4x2 Matrix geht nicht für Berechnung -> Zur Berechnung muss Anzahl Zeile = Anzahl Spalte -> 4x4Matrix
+				// rotate per Frame
+				//std::cos(m_myConstantBuffer.fAngle), std::sin(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
+				//-std::sin(m_myConstantBuffer.fAngle), std::cos(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
+				// Zoom in or out one times.
+				1.0f * fZoom, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f * fZoom, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			}
+		};
+		// Matrix für Berechnung des Bildes in GPU laden
+		HR_RETURN_ON_ERR(hr, SetConstantBuffer());
+
+		return hr;
+	}//END-FUNC
 	/*************************************************************************************************
 	**************************************PUBLIC-METHODES*********************************************
 	*************************************************************************************************/
+	BOOL ClsD3D11::IsDevice()
+	{
+		if (m_pD3dDevice)
+			return TRUE;
+		return FALSE;
+	}
+	BOOL ClsD3D11::IsContextAndSwapChain()
+	{
+		if (m_pD3dContext && m_pDxgiSwapChain)
+			return TRUE;
+		return FALSE;
+	}
 	/// <summary>
 	/// Festlegen wie das fertige Bild im Frontbuffer angezeigt werden soll
 	/// Passt das Bild für das ZielFenster an: myViewport
@@ -112,7 +160,7 @@ namespace D3D
 		RECT myAppWnd = {};
 		D3D11_VIEWPORT myViewPort = {};
 
-		if (m_pD3dContext && m_pDxgiSwapChain)
+		if (IsContextAndSwapChain())
 		{
 			// Clear Pipeline with a zero-Array of RenderTargetView
 			m_pD3dContext->ClearRenderTargetView(m_pTarRenderView.Get(), m_fClearColor);
@@ -159,40 +207,6 @@ namespace D3D
 		}//END-IF valid SwapChain
 		return hr;
 	}//END-FUNC
-	/*HRESULT ClsD3D11::AdjustWindowSize(UINT uiPercentage)
-	{
-		HRESULT hr = NULL;
-
-		UINT uiHeightSrc = m_pFrameData->uiHeightSrc * ((double)uiPercentage/100);
-		UINT uiWidthSrc = m_pFrameData->uiWidthSrc * ((double)uiPercentage / 100);
-		RECT myAppRect = {};
-		DXGI_MODE_DESC myBufferDesc = {};
-		DXGI_SWAP_CHAIN_DESC mySwapDesc = {};
-
-		// use old Settings for the new BufferDesc
-		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->GetDesc(&mySwapDesc));
-		myBufferDesc = mySwapDesc.BufferDesc;
-
-		myAppRect.top = 0;
-		myAppRect.bottom = uiHeightSrc;
-		myAppRect.left = 0;
-		myAppRect.right = uiWidthSrc;
-		// Berechnung der WindowSize anhand der ClientArea
-		AdjustWindowRect(&myAppRect, WINSTYLE, TRUE);
-
-
-		// overwrite with new Resolution1105 1080
-		myBufferDesc.Height = myAppRect.bottom - myAppRect.top;
-		myBufferDesc.Width = myAppRect.right - myAppRect.left;
-		HR_RETURN_ON_ERR(hr, m_pDxgiSwapChain->ResizeTarget(&myBufferDesc));
-		RECT wnd = {};
-		//GetWindowRect(m_hWnd, &wnd);
-		GetClientRect(m_hWnd, &wnd);
-		// recreate the Buffers
-		HR_RETURN_ON_ERR(hr, WndSizeHasChanged());
-
-		return hr;
-	}*/
 	/// <summary>
 	/// Kopiervorgang der PixelDaten innerhalb der Loop.
 	/// Je nach CopyMethod wird die Methode ausgewählt.
@@ -604,43 +618,6 @@ namespace D3D
 
 		return hr;
 	}//END-FUNC
-	/// <summary>
-	/// Sets the zoom factor per function on GPU-Side
-	/// Setting the Constont buffer can be done every frame.
-	/// Much faster instead setting the coordinates of the texture itself.
-	/// </summary>
-	/// <param name="fZoomPercentage">Zoom factor in percentage</param>
-	/// <returns>HRESULT</returns>
-	HRESULT ClsD3D11::SetZoomPercentage(float fZoomPercentage)
-	{
-		HRESULT hr = NULL;
-		float fZoom = fZoomPercentage / 100;
-		m_myConstantBuffer.myConstantBuffer =
-		{
-			{
-				// EinheitsMatrix, keine Veränderung pro Frame
-				// Constant Buffer (Funktion) kann pro Frame an GPU gesendet werden
-				// 4x4 Matrix
-				// 1. x-Koord
-				// 2. y-Koord
-				// 3. z-Koord: keine Änderung, d.h. Einheitswerte
-				// 4. für Mondifikation: keine Änderung, d.h. Einheitswerte
-				// 4x2 Matrix geht nicht für Berechnung -> Zur Berechnung muss Anzahl Zeile = Anzahl Spalte -> 4x4Matrix
-				// rotate per Frame
-				//std::cos(m_myConstantBuffer.fAngle), std::sin(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
-				//-std::sin(m_myConstantBuffer.fAngle), std::cos(m_myConstantBuffer.fAngle), 0.0f, 0.0f,
-				// Zoom in or out one times.
-				1.0f * fZoom, 0.0f, 0.0f, 0.0f,
-				0.0f, 1.0f * fZoom, 0.0f, 0.0f,
-				0.0f, 0.0f, 1.0f, 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			}
-		};
-		// Matrix für Berechnung des Bildes in GPU laden
-		HR_RETURN_ON_ERR(hr, SetConstantBuffer());
-
-		return hr;
-	}//END-FUNC
 	/*************************************************************************************************
 	**************************************PRIVATE-METHODES********************************************
 	*************************************************************************************************/
@@ -949,6 +926,8 @@ namespace D3D
 			return S_OK;
 		//m_MyFrameInfo.AccumulatedFrames;						// Skipped frames per GPUCall e.g. GPU finished 10 frames, and we take the 10.
 		// LowLvl (Hardwarenah) zu HighLvl
+		if (!pDxgiDesktopResource)
+			return DXGI_ERROR_WAIT_TIMEOUT;						// will be nullptry if screensaver
 		HR_RETURN_ON_ERR(hr, pDxgiDesktopResource->QueryInterface(
 			IID_PPV_ARGS(&pD3dAcquiredDesktopImage)));
 		// Überschreibung meiner D3D11Texture mit DesktopD3D11Texture

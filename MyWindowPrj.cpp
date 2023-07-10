@@ -34,8 +34,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	myVideoDescriptor.bIsAudio = true;
 	//myVideoDescriptor.strWndTitle = "Editor";
 	myVideoDescriptor.uiFPS = 60;
-	myVideoDescriptor.myCpyMethod = CopyMethod::Mapping;
-	myVideoDescriptor.uiMonitorID = 1;
+	myVideoDescriptor.myCpyMethod = CopyMethod::DesktopDupl;
+	myVideoDescriptor.uiMonitorID = MAINMONITOR;
 
 	ClsD3D11Recording myClsD3D11Recording(&myVideoDescriptor);
 	ClsWnd oMyWnd(											// führt CreateWindowEx aus, d.h. erzeugt Fenster die reg. sind. 
@@ -47,6 +47,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 	myClsD3D11Recording.Init3DWindow();
 	//myClsD3D11Recording.SetRecordingStatus(true);
 	//myClsD3D11Recording.PrepareRecording();
+	
 	while (oMyWnd.RunMsgLoop())								// WndMainLoop
 	{
 		myClsD3D11Recording.Loop();

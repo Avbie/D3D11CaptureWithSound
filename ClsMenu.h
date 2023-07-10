@@ -13,12 +13,15 @@ public:
 		HMENU hSettings = CreateMenu();
 		HMENU hWndSize = CreateMenu();
 		HMENU hSetWnd = CreateMenu();
+		HMENU hSetCpyMethod = CreateMenu();
+		HMENU hSetResolution = CreateMenu();
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hFileM, L"File");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hRecord, L"Capture");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hVidSrc, L"Pick Monitor");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSettings, L"Settings");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hWndSize, L"Fenstergröße zur Quelle");
 		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSetWnd, L"Actives Fenster als Quelle");
+		AppendMenu(hMenu, MF_POPUP, (UINT_PTR)hSetResolution, L"Resolution");
 		AppendMenu(hFileM, MF_STRING, 1, L"New");
 		AppendMenu(hFileM, MF_STRING, IDM_ABOUT, L"About");
 		AppendMenu(hRecord, MF_STRING, IDM_RECORDSTART, L"Start");
@@ -35,6 +38,10 @@ public:
 		AppendMenu(hSetWnd, MF_STRING, IDM_WNDSET1, L"Fenster 1");
 		AppendMenu(hSetWnd, MF_STRING, IDM_WNDSET2, L"Fenster 2");
 		AppendMenu(hSetWnd, MF_STRING, IDM_WNDSET3, L"Fenster 3");
+
+		AppendMenu(hSetResolution, MF_STRING, IDM_RES1, L"1");
+		AppendMenu(hSetResolution, MF_STRING, IDM_RES2, L"2");
+		AppendMenu(hSetResolution, MF_STRING, IDM_RES3, L"3");
 		SetMenu(hWnd, hMenu);
 	}
 	friend class ClsWnd;
